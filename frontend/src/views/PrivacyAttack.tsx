@@ -1,4 +1,4 @@
-import DotPlot from "../components/DotPlot";
+import DotPlot from "../components/DistributionDotPlot";
 
 export default function PrivacyAttack({ height }: { height: number }) {
   return (
