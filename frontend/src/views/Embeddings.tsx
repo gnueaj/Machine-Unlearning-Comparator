@@ -141,8 +141,9 @@ export default function Embeddings({ height }: { height: number }) {
               </p>
               <p className="text-sm text-muted-foreground">
                 The scatter plots present two-dimensional UMAP projections of
-                the 512-dimensional penultimate-layer activations extracted from
-                2,000 data points in the training dataset.
+                the 512-dimensional penultimate-layer activations. These
+                activations were extracted from 2,000 data points in the
+                training dataset.
               </p>
             </div>
             <div>
