@@ -1,48 +1,28 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as d3 from "d3";
+
+import { DataPoint } from "../views/PrivacyAttack";
 
 const MARGIN = { top: 40, right: 40, bottom: 50, left: 40 };
 const LEGEND_DATA = [
   { label: "denied loan / would default", color: "#808080" },
-  { label: "denied loan / would pay back", color: "#404040" },
   { label: "granted loan / defaults", color: "#60a5fa" },
+  { label: "denied loan / would pay back", color: "#404040" },
   { label: "granted loan / pays back", color: "#1e40af" },
 ];
 
-interface DataPoint {
-  entropy: number;
-  type: "default" | "payback";
-  status: "denied" | "granted";
+interface Props {
+  data: DataPoint[];
+  threshold: number;
+  setThreshold: (value: number) => void;
 }
 
-const generateData = (): DataPoint[] => {
-  const data: DataPoint[] = [];
-
-  for (let i = 0; i < 200; i++) {
-    const entropy = Math.round(d3.randomNormal(3, 1)() * 4) / 4;
-    data.push({
-      entropy,
-      type: "default",
-      status: entropy < 4 ? "denied" : "granted",
-    });
-  }
-
-  for (let i = 0; i < 200; i++) {
-    const entropy = Math.round(d3.randomNormal(5, 1)() * 4) / 4;
-    data.push({
-      entropy,
-      type: "payback",
-      status: entropy < 4 ? "denied" : "granted",
-    });
-  }
-
-  return data;
-};
-const DATA = generateData();
-
-const DistributionPlot: React.FC = () => {
+export default function DistributionPlot({
+  data,
+  threshold,
+  setThreshold,
+}: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [threshold, setThreshold] = useState(4);
   const width = 600;
   const height = 300;
 
@@ -73,14 +53,14 @@ const DistributionPlot: React.FC = () => {
 
     svg
       .selectAll("circle")
-      .data(DATA)
+      .data(data)
       .enter()
       .append("circle")
       .attr("cx", (d) => xScale(d.entropy))
       .attr("cy", (d, i) => {
         const binWidth = 0.25;
         const bin = Math.floor(d.entropy / binWidth);
-        const pointsInBin = DATA.filter(
+        const pointsInBin = data.filter(
           (p) => Math.floor(p.entropy / binWidth) === bin
         );
         const defaultPoints = pointsInBin.filter((p) => p.type === "default");
@@ -105,16 +85,18 @@ const DistributionPlot: React.FC = () => {
 
     const dragLine = d3.drag().on("drag", (event) => {
       const newX = event.x;
-      const newThreshold = xScale.invert(newX);
+      const newThreshold = Math.round(xScale.invert(newX) * 20) / 20;
 
       if (newThreshold >= -2 && newThreshold <= 10) {
         setThreshold(newThreshold);
-
-        thresholdGroup.attr("transform", `translate(${newX}, 0)`);
+        thresholdGroup.attr(
+          "transform",
+          `translate(${xScale(newThreshold)}, 0)`
+        );
 
         svg
           .selectAll("circle")
-          .data<DataPoint>(DATA)
+          .data<DataPoint>(data)
           .attr("fill", (d) => {
             if (d.entropy < newThreshold) {
               return d.type === "default" ? "#808080" : "#404040";
@@ -150,34 +132,72 @@ const DistributionPlot: React.FC = () => {
       .append("text")
       .attr("y", MARGIN.top - 10)
       .attr("text-anchor", "middle")
-      .text(`threshold: ${threshold.toFixed(1)}`);
+      .attr("font-weight", 300)
+      .text(`Threshold: ${threshold.toFixed(2)}`);
 
     const legend = svg
       .append("g")
-      .attr("transform", `translate(${MARGIN.left}, ${height - 20})`);
+      .attr(
+        "transform",
+        `translate(${width / 2 + 10}, ${height - MARGIN.bottom + 30})`
+      );
+
+    const legendWidth = 300;
+    const legendHeight = 20;
 
     LEGEND_DATA.forEach((item, i) => {
-      const legendRow = legend
-        .append("g")
-        .attr("transform", `translate(${i * 200}, 0)`);
+      const x = (i % 2) * legendWidth - legendWidth;
+      const y = Math.floor(i / 2) * legendHeight;
 
-      legendRow
+      const legendItem = legend
+        .append("g")
+        .attr("transform", `translate(${x}, ${y})`);
+
+      legendItem
         .append("circle")
         .attr("cx", 0)
-        .attr("cy", 0)
+        .attr("cy", legendHeight / 2)
         .attr("r", 4)
-        .style("fill", item.color);
+        .attr("fill", item.color);
 
-      legendRow
+      legendItem
         .append("text")
         .attr("x", 10)
-        .attr("y", 4)
+        .attr("y", legendHeight / 2)
+        .attr("dy", "0.35em")
         .text(item.label)
-        .style("font-size", "12px");
+        .style("font-size", "12px")
+        .style("font-family", "Roboto, sans-serif")
+        .style("font-weight", "300");
     });
-  }, [threshold]);
+
+    // LEGEND_DATA.forEach((item, i) => {
+    //   const row = Math.floor(i / legendColumns);
+    //   const col = i % legendColumns;
+
+    //   const legendRow = legend
+    //     .append("g")
+    //     .attr(
+    //       "transform",
+    //       `translate(${col * legendWidth}, ${row * legendSpacing})`
+    //     );
+
+    //   legendRow
+    //     .append("circle")
+    //     .attr("cx", 0)
+    //     .attr("cy", -6)
+    //     .attr("r", 4)
+    //     .style("fill", item.color);
+
+    //   legendRow
+    //     .append("text")
+    //     .attr("x", 10)
+    //     .attr("y", -3)
+    //     .text(item.label)
+    //     .style("font-size", "12px")
+    //     .style("font-family", "sans-serif");
+    // });
+  }, [data, setThreshold, threshold]);
 
   return <svg ref={svgRef}></svg>;
-};
-
-export default DistributionPlot;
+}
