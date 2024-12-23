@@ -1,15 +1,16 @@
 import { useEffect, useRef } from "react";
 import * as d3 from "d3";
 
-import { DataPoint } from "../views/PrivacyAttack";
+import { DataPoint } from "./Discriminator";
 
-const MARGIN = { top: 40, right: 40, bottom: 50, left: 40 };
+const MARGIN = { top: 22, right: 5, bottom: 80, left: 20 };
 const LEGEND_DATA = [
-  { label: "denied loan / would default", color: "#808080" },
-  { label: "granted loan / defaults", color: "#60a5fa" },
-  { label: "denied loan / would pay back", color: "#404040" },
-  { label: "granted loan / pays back", color: "#1e40af" },
+  { label: "denied loan / would default", color: "#808080", align: "left" },
+  { label: "granted loan / defaults", color: "#60a5fa", align: "right" },
+  { label: "denied loan / would pay back", color: "#404040", align: "left" },
+  { label: "granted loan / pays back", color: "#1e40af", align: "right" },
 ];
+const GRID_COLOR = "#efefef";
 
 interface Props {
   data: DataPoint[];
@@ -23,7 +24,7 @@ export default function DistributionPlot({
   setThreshold,
 }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const width = 600;
+  const width = 400;
   const height = 300;
 
   useEffect(() => {
@@ -46,10 +47,59 @@ export default function DistributionPlot({
       .domain([0, 30])
       .range([height - MARGIN.bottom, MARGIN.top]);
 
+    const grid = svg.append("g").attr("class", "grid");
+
+    // x-axis grid
+    grid
+      .append("g")
+      .attr("transform", `translate(0,${height - MARGIN.bottom})`)
+      .call(
+        d3
+          .axisBottom(xScale)
+          .ticks(6)
+          .tickSize(-(height - MARGIN.top - MARGIN.bottom))
+          .tickFormat(() => "")
+      )
+      .call((g) => g.select(".domain").remove())
+      .call((g) =>
+        g
+          .selectAll(".tick line")
+          .attr("stroke", GRID_COLOR)
+          .attr("stroke-width", "1")
+      );
+
+    // y-axis grid
+    grid
+      .append("g")
+      .attr("transform", `translate(${MARGIN.left}, 0)`)
+      .call(
+        d3
+          .axisLeft(yScale)
+          .ticks(7)
+          .tickSize(-width + MARGIN.left + MARGIN.right)
+          .tickFormat(() => "")
+      )
+      .call((g) => g.select(".domain").remove())
+      .call((g) =>
+        g
+          .selectAll(".tick line")
+          .attr("stroke", GRID_COLOR)
+          .attr("stroke-width", "1")
+      );
+
+    // x-axis
     svg
       .append("g")
       .attr("transform", `translate(0,${height - MARGIN.bottom})`)
-      .call(d3.axisBottom(xScale).ticks(6));
+      .call(d3.axisBottom(xScale).ticks(6))
+      .call((g) => g.selectAll(".tick line").attr("stroke-width", "1"));
+
+    // y-axis
+    svg
+      .append("g")
+      .attr("transform", `translate(${MARGIN.left}, 0)`)
+      .call(d3.axisLeft(yScale).ticks(7))
+      .call((g) => g.selectAll(".tick line").attr("stroke-width", "1"));
 
     svg
       .selectAll("circle")
@@ -63,18 +113,27 @@ export default function DistributionPlot({
         const pointsInBin = data.filter(
           (p) => Math.floor(p.entropy / binWidth) === bin
         );
-        const defaultPoints = pointsInBin.filter((p) => p.type === "default");
         const paybackPoints = pointsInBin.filter((p) => p.type === "payback");
+        const defaultPoints = pointsInBin.filter((p) => p.type === "default");
 
-        if (d.type === "default") {
-          const position = defaultPoints.indexOf(d);
+        if (d.type === "payback") {
+          const position = paybackPoints.indexOf(d);
           return yScale(position + 1);
         } else {
-          const position = paybackPoints.indexOf(d) + defaultPoints.length;
-          return yScale(position + 1);
+          if (defaultPoints.length > paybackPoints.length) {
+            const position = defaultPoints.indexOf(d);
+            if (position >= paybackPoints.length) {
+              return yScale(position + 1);
+            } else {
+              return yScale(position + 1);
+            }
+          } else {
+            const position = defaultPoints.indexOf(d);
+            return yScale(position + 1);
+          }
         }
       })
-      .attr("r", 4)
+      .attr("r", 2.5)
       .attr("fill", (d) => {
         if (d.entropy < threshold) {
           return d.type === "default" ? "#808080" : "#404040";
@@ -117,8 +176,9 @@ export default function DistributionPlot({
       .append("line")
       .attr("y1", MARGIN.top)
       .attr("y2", height - MARGIN.bottom)
-      .attr("stroke", "black")
-      .attr("stroke-width", 2);
+      .attr("stroke", "#ff4d4d")
+      .attr("stroke-width", 1.5)
+      .attr("stroke-dasharray", "4,3");
 
     thresholdGroup
       .append("rect")
@@ -142,61 +202,33 @@ export default function DistributionPlot({
         `translate(${width / 2 + 10}, ${height - MARGIN.bottom + 30})`
       );
 
-    const legendWidth = 300;
     const legendHeight = 20;
 
     LEGEND_DATA.forEach((item, i) => {
-      const x = (i % 2) * legendWidth - legendWidth;
       const y = Math.floor(i / 2) * legendHeight;
+      const x = item.align === "left" ? 0 : width - 200;
 
       const legendItem = legend
         .append("g")
         .attr("transform", `translate(${x}, ${y})`);
 
       legendItem
-        .append("circle")
-        .attr("cx", 0)
-        .attr("cy", legendHeight / 2)
-        .attr("r", 4)
+        .append("rect")
+        .attr("width", 15)
+        .attr("height", 15)
+        .attr("y", 0)
         .attr("fill", item.color);
 
       legendItem
         .append("text")
-        .attr("x", 10)
-        .attr("y", legendHeight / 2)
+        .attr("x", 25)
+        .attr("y", 15 / 2)
         .attr("dy", "0.35em")
         .text(item.label)
         .style("font-size", "12px")
         .style("font-family", "Roboto, sans-serif")
         .style("font-weight", "300");
     });
-
-    // LEGEND_DATA.forEach((item, i) => {
-    //   const row = Math.floor(i / legendColumns);
-    //   const col = i % legendColumns;
-
-    //   const legendRow = legend
-    //     .append("g")
-    //     .attr(
-    //       "transform",
-    //       `translate(${col * legendWidth}, ${row * legendSpacing})`
-    //     );
-
-    //   legendRow
-    //     .append("circle")
-    //     .attr("cx", 0)
-    //     .attr("cy", -6)
-    //     .attr("r", 4)
-    //     .style("fill", item.color);
-
-    //   legendRow
-    //     .append("text")
-    //     .attr("x", 10)
-    //     .attr("y", -3)
-    //     .text(item.label)
-    //     .style("font-size", "12px")
-    //     .style("font-family", "sans-serif");
-    // });
   }, [data, setThreshold, threshold]);
 
   return <svg ref={svgRef}></svg>;

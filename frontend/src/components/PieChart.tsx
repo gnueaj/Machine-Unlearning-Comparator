@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import * as d3 from "d3";
 
-import { DataPoint } from "../views/PrivacyAttack";
+import { DataPoint } from "./Discriminator";
 
-const WIDTH = 200;
-const HEIGHT = 200;
+const WIDTH = 160;
+const HEIGHT = 160;
 const RADIUS = Math.min(WIDTH, HEIGHT) / 2.5;
 const COLORS = {
   deniedDefault: "#808080",
