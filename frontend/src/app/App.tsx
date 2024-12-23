@@ -9,6 +9,7 @@ import Predictions from "../views/Predictions";
 import Correlations from "../views/Correlations";
 import { ExperimentsContext } from "../store/experiments-context";
 
+export const APP_WIDTH = 1805;
 const CORE_WIDTH = 1312;
 const EXPERIMENTS_WIDTH = 1032;
 const ANALYSIS_VIEW_WIDTH = 493;
@@ -26,11 +27,10 @@ const CORRELATIONS_HEIGHT =
 
 export function calculateZoom() {
   const screenWidth = window.innerWidth;
-  const appWidth = 1805;
 
   const totalHeight = 48 + EXPERIMENTS_PROGRESS_HEIGHT + CORE_HEIGHT;
 
-  const expectedZoom = screenWidth / appWidth;
+  const expectedZoom = screenWidth / APP_WIDTH;
   const scaledHeight = totalHeight * expectedZoom;
 
   if (scaledHeight > window.innerHeight) {
@@ -45,7 +45,7 @@ export function calculateZoom() {
     const scrollbarWidth = outer.offsetWidth - inner.offsetWidth;
     outer.parentNode?.removeChild(outer);
 
-    return (screenWidth - scrollbarWidth) / appWidth;
+    return (screenWidth - scrollbarWidth) / APP_WIDTH;
   }
 
   return expectedZoom;
