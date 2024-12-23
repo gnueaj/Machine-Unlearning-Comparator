@@ -54,9 +54,7 @@ export default function PieChartDisplay({ data, threshold }: Props) {
       .enter()
       .append("path")
       .attr("d", arc)
-      .attr("fill", (d) => d.data.color)
-      .attr("stroke", "white")
-      .style("stroke-width", "2px");
+      .attr("fill", (d) => d.data.color);
   }, [data, threshold]);
 
   return <svg ref={svgRef} width={WIDTH} height={HEIGHT}></svg>;
