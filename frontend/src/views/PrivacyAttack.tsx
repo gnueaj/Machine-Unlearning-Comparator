@@ -46,7 +46,7 @@ export default function PrivacyAttack({ height }: { height: number }) {
       style={{ height }}
       className="w-full flex justify-evenly items-center border-[1px] border-solid border-[rgba(0, 0, 0, 0.2)] rounded-[6px]"
     >
-      <div className="flex flex-col items-center">
+      {/* <div className="flex flex-col items-center">
         <div className="flex flex-col items-center">
           <p className="text-[15px]">
             Retrain vs Comparison {comparison !== "" && `(${comparison})`}
@@ -78,7 +78,7 @@ export default function PrivacyAttack({ height }: { height: number }) {
           </div>
         </div>
         <p className="font-bold text-[15px]">Forgetting Quality: 0.8165</p>
-      </div>
+      </div> */}
     </div>
   );
 }
