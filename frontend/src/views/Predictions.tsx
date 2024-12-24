@@ -119,10 +119,10 @@ const ColorBar = () => {
         style={{ background: gradient }}
       />
       <div className="absolute -bottom-[5px] left-0.5">
-        <span className="text-[9px] font-bold text-white">0</span>
+        <span className="text-[9px] text-white">0</span>
       </div>
       <div className="absolute -bottom-[5px] right-0.5">
-        <span className="text-[9px] font-bold text-[#666666]">1</span>
+        <span className="text-[9px] text-[#666666]">1</span>
       </div>
     </div>
   );
