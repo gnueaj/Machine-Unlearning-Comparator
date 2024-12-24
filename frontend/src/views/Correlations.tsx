@@ -1,5 +1,6 @@
 import { useState, useContext } from "react";
 
+import Title from "../components/Title";
 import Indicator from "../components/Indicator";
 import LineChart from "../components/LineChart";
 import DatasetModeSelector from "../components/DatasetModeSelector";
@@ -26,15 +27,10 @@ export default function Correlations({
   return (
     <section
       style={{ width, height }}
-      className="px-1 flex flex-col border relative"
+      className="p-1 flex flex-col border relative"
     >
       <div className="flex justify-between">
-        <div className="flex items-center">
-          <Layers02Icon />
-          <h5 className="font-semibold ml-[3px] text-lg">
-            Layer-Wise Correlations
-          </h5>
-        </div>
+        <Title Icon={<Layers02Icon />} title="Layer-Wise Correlations" />
         {forgetClassExist && allSelected && (
           <DatasetModeSelector onValueChange={setDataset} />
         )}

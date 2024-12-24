@@ -1,6 +1,7 @@
 import { useState, useContext } from "react";
 import * as d3 from "d3";
 
+import Title from "../components/Title";
 import DatasetModeSelector from "../components/DatasetModeSelector";
 import BubbleChart from "../components/BubbleChart";
 import Indicator from "../components/Indicator";
@@ -38,10 +39,7 @@ export default function Predictions({
       className="p-1 flex flex-col border transition-all z-10 relative"
     >
       <div className="flex justify-between">
-        <div className="flex items-center mr-2">
-          <Target02Icon />
-          <h5 className="font-semibold ml-1 text-lg">Predictions</h5>
-        </div>
+        <Title Icon={<Target02Icon />} title="Predictions" />
         {forgetClassExist && allSelected && (
           <DatasetModeSelector onValueChange={setDatasetMode} />
         )}

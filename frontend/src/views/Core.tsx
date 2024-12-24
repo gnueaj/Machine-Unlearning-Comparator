@@ -1,5 +1,6 @@
 import React, { useState, useContext } from "react";
 
+import Title from "../components/Title";
 import Indicator from "../components/Indicator";
 import Embeddings from "./Embeddings";
 import PrivacyAttack from "./PrivacyAttack";
@@ -42,36 +43,35 @@ export default function Core({
   return (
     <section style={{ width, height }} className="p-1 border border-l-0">
       <div className="flex justify-between items-center">
-        <div className="flex items-center mb-0.5">
-          <div
+        <div className="flex items-center gap-1 mb-0.5 relative right-1">
+          <Title
+            Icon={
+              <ChartScatterIcon
+                className={!isEmbeddingMode ? "opacity-40" : ""}
+              />
+            }
+            title="Embeddings"
             id={EMBEDDINGS}
-            onClick={handleDisplayModeChange}
-            className={`relative z-10 flex items-center mr-3 cursor-pointer pb-0.5 px-1 ${
+            customClass={`relative z-10 cursor-pointer pb-0.5 px-1 ${
               !isEmbeddingMode && "text-gray-400 border-none"
             }`}
-          >
-            <ChartScatterIcon
-              className={!isEmbeddingMode ? "opacity-40" : ""}
-            />
-            <button className="font-semibold ml-[3px] text-lg">
-              Embeddings
-            </button>
-            {isEmbeddingMode && <UnderLine />}
-          </div>
-          <div
+            AdditionalContent={isEmbeddingMode && <UnderLine />}
             onClick={handleDisplayModeChange}
-            className={`relative z-10 flex items-center cursor-pointer pb-0.5 px-1 ${
+          />
+          <Title
+            Icon={
+              <DarkShieldIcon
+                className={`w-4 h-4 ${isEmbeddingMode && "opacity-40"}`}
+              />
+            }
+            title="Privacy Attack"
+            id={ATTACK}
+            customClass={`relative z-10 cursor-pointer pb-0.5 px-1 ${
               isEmbeddingMode && "text-gray-400 border-none"
             }`}
-          >
-            <DarkShieldIcon
-              className={`w-4 h-4 ${isEmbeddingMode && "opacity-40"}`}
-            />
-            <button id={ATTACK} className="font-semibold ml-[3px] text-lg">
-              Privacy Attack
-            </button>
-            {!isEmbeddingMode && <UnderLine />}
-          </div>
+            AdditionalContent={!isEmbeddingMode && <UnderLine />}
+            onClick={handleDisplayModeChange}
+          />
         </div>
         {forgetClassExist && isEmbeddingMode && <EmbeddingLegend />}
       </div>
