@@ -112,5 +112,18 @@ const ColorBar = () => {
 
   const gradient = `linear-gradient(to right, ${colors.join(", ")})`;
 
-  return <div className="w-[110px] h-2.5" style={{ background: gradient }} />;
+  return (
+    <div className="relative w-[110px] h-2.5">
+      <div
+        className="absolute w-full h-full"
+        style={{ background: gradient }}
+      />
+      <div className="absolute -bottom-[5px] left-0.5">
+        <span className="text-[9px] font-bold text-white">0</span>
+      </div>
+      <div className="absolute -bottom-[5px] right-0.5">
+        <span className="text-[9px] font-bold text-[#666666]">1</span>
+      </div>
+    </div>
+  );
 };
