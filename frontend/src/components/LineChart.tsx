@@ -86,7 +86,7 @@ type TickProps = {
   hoveredLayer: string | null;
 };
 
-export default function MyLineChart({ dataset }: { dataset: string }) {
+export default function _LineChart({ dataset }: { dataset: string }) {
   const { baselineExperiment, comparisonExperiment } =
     useContext(ExperimentsContext);
   const [hoveredLayer, setHoveredLayer] = useState<string | null>(null);
@@ -102,13 +102,13 @@ export default function MyLineChart({ dataset }: { dataset: string }) {
   const layers = ckaData.map((data) => data.layer);
 
   return (
-    <div className="relative bottom-1 right-0.5">
+    <div className="relative bottom-1 right-3.5">
       <style>{tickStyle}</style>
       <CustomLegend />
       <p className="text-[15px] text-center relative top-1 mb-1.5">
         Per-layer Similarity Before/After Unlearning
       </p>
-      <ChartContainer className="w-[480px] h-[250px]" config={chartConfig}>
+      <ChartContainer className="w-[492px] h-[250px]" config={chartConfig}>
         <LineChart
           accessibilityLayer
           data={ckaData}
@@ -116,7 +116,7 @@ export default function MyLineChart({ dataset }: { dataset: string }) {
             top: 7,
             right: 20,
             bottom: 34,
-            left: -12,
+            left: 0,
           }}
           onMouseMove={(state: any) => {
             if (state?.activePayload) {
@@ -286,7 +286,7 @@ function CustomTooltip({ active, payload }: TooltipProps<number, string>) {
 
 function CustomLegend() {
   return (
-    <div className="absolute top-[128px] left-[60px] text-xs leading-4">
+    <div className="absolute top-32 left-[72px] text-xs leading-4">
       <div className="flex items-center py-0.5">
         <div className="relative">
           <CircleIcon
