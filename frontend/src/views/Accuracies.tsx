@@ -68,7 +68,7 @@ export default function Accuracies({
         baseline === "" || comparison === "" ? (
           <Indicator about="BaselineComparison" />
         ) : (
-          <div className="w-full flex items-center relative">
+          <div className="w-full flex items-center relative bottom-0.5">
             <VerticalBarChart
               mode="Training"
               gapData={trainAccuracyGap}

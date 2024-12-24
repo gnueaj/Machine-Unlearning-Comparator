@@ -155,7 +155,7 @@ export default function VerticalBarChart({
       </span>
       <ChartContainer
         config={chartConfig}
-        className={`${showYAxis ? "w-[265px]" : "w-[205px]"} h-[230px]`}
+        className={`${showYAxis ? "w-[265px]" : "w-[205px]"} h-[232px]`}
       >
         <BarChart
           accessibilityLayer
@@ -165,7 +165,7 @@ export default function VerticalBarChart({
             left: 8,
             right: 8,
             top: 12,
-            bottom: 0,
+            bottom: 2,
           }}
           onMouseMove={(state: any) => {
             if (state?.activePayload) {
@@ -208,7 +208,7 @@ export default function VerticalBarChart({
               fill={BLACK}
               className="-translate-y-2 text-xs"
               value={`← Baseline High | Comparison High →`}
-              offset={-3}
+              offset={-1}
               dx={8.5}
               position="bottom"
             />
