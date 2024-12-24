@@ -21,7 +21,9 @@ export default function Title({
     <div
       id={id}
       onClick={onClick}
-      className={"flex items-center gap-1 ml-1 " + customClass}
+      className={
+        "flex items-center gap-1 ml-1 relative bottom-[1px] " + customClass
+      }
     >
       {Icon}
       <div className="flex items-center font-semibold text-[17px] leading-7">
