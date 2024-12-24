@@ -89,7 +89,7 @@ function BubbleChartLegend() {
         <span>More</span>
         <span className="absolute top-[27px] text-[13px]">Frequent</span>
       </div>
-      <div className="flex flex-col items-center gap-1 relative top-0.5">
+      <div className="flex flex-col items-center gap-[2px] relative top-0.5">
         <ColorBar />
         <div className="text-nowrap flex items-center gap-2 text-[10px]">
           <span>Less</span>
@@ -113,16 +113,16 @@ const ColorBar = () => {
   const gradient = `linear-gradient(to right, ${colors.join(", ")})`;
 
   return (
-    <div className="relative w-[110px] h-2.5">
+    <div className="relative w-[110px] h-3">
       <div
         className="absolute w-full h-full"
         style={{ background: gradient }}
       />
-      <div className="absolute -bottom-[5px] left-0.5">
-        <span className="text-[9px] text-white">0</span>
+      <div className="absolute -bottom-[4.5px] left-0.5">
+        <span className="text-[10px] text-white">0</span>
       </div>
-      <div className="absolute -bottom-[5px] right-0.5">
-        <span className="text-[9px] text-[#666666]">1</span>
+      <div className="absolute -bottom-[4.5px] right-0.5">
+        <span className="text-[10px] text-[#666666]">1</span>
       </div>
     </div>
   );
