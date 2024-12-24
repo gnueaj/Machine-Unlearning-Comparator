@@ -6,6 +6,7 @@ import {
   BaselineNeuralNetworkIcon,
   ComparisonNeuralNetworkIcon,
 } from "./UI/icons";
+import { calculateZoom } from "../app/App";
 import { BaselineComparisonContext } from "../store/baseline-comparison-context";
 import { ForgetClassContext } from "../store/forget-class-context";
 import { ExperimentsContext } from "../store/experiments-context";
@@ -56,6 +57,7 @@ export default function BubbleChart({
   const svgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
+  const zoom = calculateZoom();
   const isBaseline = mode === "Baseline";
   const id = isBaseline ? baseline : comparison;
   const experiment = isBaseline ? baselineExperiment : comparisonExperiment;
@@ -185,8 +187,8 @@ export default function BubbleChart({
         const rect = event.target.getBoundingClientRect();
         const tooltipWidth = tooltipRef.current?.offsetWidth || 100;
 
-        let xPos = rect.right + 10;
-        let yPos = rect.top + rect.height / 2;
+        let xPos = (rect.right + 10) / zoom;
+        let yPos = (rect.top + rect.height / 2) / zoom;
 
         if (xPos + tooltipWidth > window.innerWidth - 20) {
           xPos = rect.left - tooltipWidth;
@@ -243,6 +245,7 @@ export default function BubbleChart({
     hoveredY,
     onHover,
     showYAxis,
+    zoom,
   ]);
 
   useEffect(() => {
@@ -305,6 +308,7 @@ export default function BubbleChart({
               transform: "translateY(-50%)",
               pointerEvents: "none",
               zIndex: 10,
+              zoom,
             }}
           >
             <div>
