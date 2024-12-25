@@ -39,7 +39,11 @@ export default function Predictions({
       className="p-1 flex flex-col border transition-all z-10 relative"
     >
       <div className="flex justify-between">
-        <Title Icon={<Target02Icon />} title="Predictions" />
+        <Title
+          Icon={<Target02Icon />}
+          title="Predictions"
+          customClass="bottom-[2px] right-[1px]"
+        />
         {forgetClassExist && allSelected && (
           <DatasetModeSelector onValueChange={setDatasetMode} />
         )}

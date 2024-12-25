@@ -30,7 +30,11 @@ export default function Correlations({
       className="p-1 flex flex-col border relative"
     >
       <div className="flex justify-between">
-        <Title Icon={<Layers02Icon />} title="Layer-Wise Correlations" />
+        <Title
+          Icon={<Layers02Icon />}
+          title="Layer-Wise Correlations"
+          customClass="bottom-[2px]"
+        />
         {forgetClassExist && allSelected && (
           <DatasetModeSelector onValueChange={setDataset} />
         )}

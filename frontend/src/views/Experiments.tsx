@@ -58,7 +58,11 @@ export default function Experiments({
       className="p-1 relative border border-t-0 border-l-0"
     >
       <div className="flex justify-between items-center mb-[3px]">
-        <Title Icon={<SettingsIcon />} title="Experiments" />
+        <Title
+          Icon={<SettingsIcon />}
+          title="Experiments"
+          customClass="right-[1px]"
+        />
         {forgetClass !== undefined && (
           <Dialog
             open={open}

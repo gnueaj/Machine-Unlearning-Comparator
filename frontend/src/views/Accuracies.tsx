@@ -60,6 +60,7 @@ export default function Accuracies({
       <Title
         Icon={<Chart01Icon />}
         title="Accuracies"
+        customClass="bottom-[2px] right-[1px]"
         AdditionalContent={
           <span className="ml-1">(Comparison - Baseline)</span>
         }

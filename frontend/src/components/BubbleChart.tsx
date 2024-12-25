@@ -338,7 +338,9 @@ export default function BubbleChart({
           </div>,
           document.body
         )}
-      <span className="absolute -bottom-0.5 left-1/2 text-xs">Prediction</span>
+      <span className="absolute -bottom-0.5 left-[calc(50%+5px)] text-xs">
+        Prediction
+      </span>
     </div>
   );
 }
