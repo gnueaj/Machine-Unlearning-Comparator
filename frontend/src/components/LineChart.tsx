@@ -8,6 +8,7 @@ import {
   TooltipProps,
 } from "recharts";
 
+import { calculateZoom } from "../app/App";
 import { getCkaData } from "../utils/data/getCkaData";
 import { ExperimentsContext } from "../store/experiments-context";
 import { CircleIcon, MultiplicationSignIcon } from "./UI/icons";
@@ -89,6 +90,7 @@ type TickProps = {
 export default function _LineChart({ dataset }: { dataset: string }) {
   const { baselineExperiment, comparisonExperiment } =
     useContext(ExperimentsContext);
+
   const [hoveredLayer, setHoveredLayer] = useState<string | null>(null);
 
   const renderTick = useCallback(
@@ -108,7 +110,11 @@ export default function _LineChart({ dataset }: { dataset: string }) {
       <p className="text-[15px] text-center relative top-1 mb-1.5 ml-[25px]">
         Per-layer Similarity Before/After Unlearning
       </p>
-      <ChartContainer className="w-[492px] h-[251px]" config={chartConfig}>
+      <ChartContainer
+        className="w-[492px] h-[251px]"
+        config={chartConfig}
+        style={{ position: "relative" }}
+      >
         <LineChart
           accessibilityLayer
           data={ckaData}
@@ -169,7 +175,11 @@ export default function _LineChart({ dataset }: { dataset: string }) {
               },
             }}
           />
-          <ChartTooltip cursor={false} content={<CustomTooltip />} />
+          <ChartTooltip
+            cursor={false}
+            content={<CustomTooltip />}
+            wrapperStyle={{ zIndex: 9999 }}
+          />
           {DATAKEYS.map((key, idx) => {
             const isBaselineLine = key.includes("baseline");
             const dotColor = isBaselineLine ? PURPLE : EMERALD;
@@ -241,9 +251,14 @@ export default function _LineChart({ dataset }: { dataset: string }) {
 }
 
 function CustomTooltip({ active, payload }: TooltipProps<number, string>) {
+  const zoom = calculateZoom();
+
   if (active && payload && payload.length) {
     return (
-      <div className="rounded-lg border border-border/50 bg-white px-2 py-1 text-sm shadow-xl">
+      <div
+        style={{ zoom, zIndex: 9999 }}
+        className="rounded-lg border border-border/50 bg-white px-2 py-1 text-sm shadow-xl"
+      >
         <div className="flex items-center leading-[18px]">
           <CircleIcon className="w-3 h-3 mr-1" style={{ color: PURPLE }} />
           <p>
