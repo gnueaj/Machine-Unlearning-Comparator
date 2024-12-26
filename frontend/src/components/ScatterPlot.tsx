@@ -284,17 +284,15 @@ const ScatterPlot = forwardRef(
       }
 
       const containerRect = containerRef.current.getBoundingClientRect();
-      const zoomFactor = calculateZoom();
+      const zoom = calculateZoom();
 
       // 마우스 좌표를 확대/축소 비율에 맞게 조정
-      let xPos = (event.clientX - containerRect.left) / zoomFactor + 10;
-      let yPos = (event.clientY - containerRect.top) / zoomFactor + 10;
+      let xPos = (event.clientX - containerRect.left) / zoom + 10;
+      let yPos = (event.clientY - containerRect.top) / zoom + 10;
 
-      if (yPos + CONFIG.tooltipYSize > containerRect.height / zoomFactor) {
+      if (yPos + CONFIG.tooltipYSize > containerRect.height / zoom) {
         yPos =
-          (event.clientY - containerRect.top) / zoomFactor -
-          CONFIG.tooltipYSize -
-          10;
+          (event.clientY - containerRect.top) / zoom - CONFIG.tooltipYSize - 10;
         if (yPos < 0) {
           yPos = 0;
         }
