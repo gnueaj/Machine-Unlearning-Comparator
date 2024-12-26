@@ -187,12 +187,15 @@ export default function BubbleChart({
         const rect = event.target.getBoundingClientRect();
         const tooltipWidth = tooltipRef.current?.offsetWidth || 100;
 
-        let xPos = (rect.right + 10) / zoom;
-        let yPos = (rect.top + rect.height / 2) / zoom;
+        const rightSpace = window.innerWidth - rect.right;
+        const leftSpace = rect.left;
 
-        if (xPos + tooltipWidth > window.innerWidth - 20) {
-          xPos = rect.left - tooltipWidth;
-        }
+        let xPos =
+          rightSpace >= tooltipWidth + 20
+            ? (rect.right + 10) / zoom
+            : (leftSpace - tooltipWidth - 10) / zoom;
+
+        let yPos = (rect.top + rect.height / 2) / zoom;
 
         setTooltip({
           display: true,
