@@ -107,7 +107,7 @@ export default function _LineChart({ dataset }: { dataset: string }) {
     <div className="relative bottom-1.5 right-3.5">
       <style>{tickStyle}</style>
       <CustomLegend />
-      <p className="text-[15px] text-center relative top-1 mb-1.5 ml-[25px]">
+      <p className="text-[15px] text-center relative top-1 mb-1.5 ml-12">
         Per-layer Similarity Before/After Unlearning
       </p>
       <ChartContainer
