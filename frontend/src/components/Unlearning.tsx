@@ -48,10 +48,10 @@ export default function Unlearning() {
   const isCustom = method === CUSTOM;
 
   const handleMethodSelection = (value: string) => {
+    setMethod(value);
     if (value !== CUSTOM) {
       const { epochs, learning_rate, batch_size } =
         getDefaultUnlearningConfig(value);
-      setMethod(value);
       setEpochs([epochs]);
       setLearningRateIdx([learning_rate]);
       setBatchSizeLog([batch_size]);
