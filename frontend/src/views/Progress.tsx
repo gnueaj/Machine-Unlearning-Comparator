@@ -169,17 +169,17 @@ export default function Progress({
         AdditionalContent={
           forgetClassExist && (
             <div className="flex items-center gap-1.5 ml-1.5">
-              <Separator orientation="vertical" className="h-4" />
-              <div>
-                {isRunning || completedSteps.length ? (
-                  <div className="flex items-center gap-1 relative top-0.5">
-                    <Clock className="text-muted-foreground w-3 h-3" />
-                    <span className="text-sm">{runningTime.toFixed(1)}s</span>
+              {isRunning || completedSteps.length ? (
+                <>
+                  <Separator orientation="vertical" className="h-4" />
+                  <div>
+                    <div className="flex items-center gap-1 relative top-0.5">
+                      <Clock className="text-muted-foreground w-3 h-3" />
+                      <span className="text-sm">{runningTime.toFixed(1)}s</span>
+                    </div>
                   </div>
-                ) : (
-                  ""
-                )}
-              </div>
+                </>
+              ) : null}
             </div>
           )
         }
