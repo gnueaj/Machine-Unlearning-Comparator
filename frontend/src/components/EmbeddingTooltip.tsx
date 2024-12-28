@@ -23,7 +23,7 @@ const TICK_FONT_SIZE = "10px";
 const TICK_FONT_WEIGHT = 300;
 const ROBOTO_CONDENSED = "Roboto Condensed";
 const LEGEND_RECT_SIZE = 8;
-const margin = { top: 14, right: 25, bottom: 30, left: 70 };
+const margin = { top: 14, right: 30, bottom: 30, left: 60 };
 
 interface Props {
   width: number;
@@ -198,33 +198,50 @@ export default React.memo(function EmbeddingTooltip({
 
     const g = svg.append("g");
 
-    g.selectAll(".bar-baseline")
+    g.selectAll(".bar-baseline-group")
       .data(barChartData.baseline)
-      .join("rect")
-      .attr("class", "bar-baseline")
-      .attr("x", margin.left)
-      .attr("y", (d) => yScale(forgetClassNames[d.class]) ?? 0)
-      .attr("height", BAR_HEIGHT)
-      .attr("width", (d) => xScale(d.value) - margin.left)
-      .attr("fill", (_, i) => colors[i])
-      .attr("opacity", isBaseline ? HIGH_OPACITY : LOW_OPACITY)
-      .attr("stroke", isBaseline ? BLACK : "none")
-      .attr("stroke-width", isBaseline ? 1 : 0);
+      .join("g")
+      .attr("class", "bar-baseline-group")
+      .each(function (d, i) {
+        const g = d3.select(this);
+        const barWidth = xScale(d.value) - margin.left;
+        const y = yScale(forgetClassNames[d.class]) ?? 0;
 
-    g.selectAll(".bar-comparison")
+        g.append("rect")
+          .attr("class", "bar-baseline")
+          .attr("x", margin.left)
+          .attr("y", y)
+          .attr("height", BAR_HEIGHT)
+          .attr("width", barWidth)
+          .attr("fill", colors[i])
+          .attr("opacity", isBaseline ? HIGH_OPACITY : LOW_OPACITY)
+          .attr("stroke", isBaseline ? BLACK : "none")
+          .attr("stroke-width", isBaseline ? 1 : 0);
+
+        g.append("text")
+          .attr("x", margin.left + barWidth + 4)
+          .attr("y", y + BAR_HEIGHT / 2)
+          .attr("dy", "0.35em")
+          .attr("font-size", "8px")
+          .attr("font-family", ROBOTO_CONDENSED)
+          .attr("fill", isBaseline ? BLACK : "#898989")
+          .text(d.value);
+      });
+
+    g.selectAll(".bar-comparison-group")
       .data(barChartData.comparison)
       .join("g")
-      .attr("class", "bar-comparison")
+      .attr("class", "bar-comparison-group")
       .each(function (d: { class: number; value: number }, i: number) {
         const g = d3.select(this);
-        const x = xScale(d.value) - margin.left;
+        const barWidth = xScale(d.value) - margin.left;
         const y = (yScale(forgetClassNames[d.class]) ?? 0) + BAR_HEIGHT;
 
         g.append("rect")
           .attr("x", margin.left)
           .attr("y", y)
           .attr("height", BAR_HEIGHT)
-          .attr("width", x)
+          .attr("width", barWidth)
           .attr("fill", colors[i])
           .attr("opacity", !isBaseline ? HIGH_OPACITY : LOW_OPACITY)
           .attr("stroke", !isBaseline ? BLACK : "none")
@@ -234,9 +251,18 @@ export default React.memo(function EmbeddingTooltip({
           .attr("x", margin.left)
           .attr("y", y)
           .attr("height", BAR_HEIGHT)
-          .attr("width", x)
+          .attr("width", barWidth)
           .attr("fill", "url(#stripe)")
           .attr("opacity", 0.5);
+
+        g.append("text")
+          .attr("x", margin.left + barWidth + 4)
+          .attr("y", y + BAR_HEIGHT / 2)
+          .attr("dy", "0.35em")
+          .attr("font-size", "8px")
+          .attr("font-family", ROBOTO_CONDENSED)
+          .attr("fill", !isBaseline ? BLACK : "#898989")
+          .text(d.value);
       });
 
     const xAxis = d3
@@ -300,7 +326,7 @@ export default React.memo(function EmbeddingTooltip({
       </div>
       <div>
         <svg ref={svgRef} className="w-full" />
-        <p className="text-xs absolute bottom-1 right-[calc(24%+2px)] translate-x-1/2">
+        <p className="text-xs absolute bottom-1 right-[calc(26%)] translate-x-1/2">
           Confidence Score
         </p>
       </div>
