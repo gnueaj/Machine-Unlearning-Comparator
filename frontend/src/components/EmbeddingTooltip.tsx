@@ -12,9 +12,9 @@ const BLACK = "black";
 const LOW_OPACITY = 0.6;
 const HIGH_OPACITY = 1;
 const TICK_PADDING = 6;
-const BAR_HEIGHT = 8;
-const SELECT_CHART_FONT_SIZE = "8px";
-const UNSELECT_CHART_FONT_SIZE = "7.5px";
+const BAR_HEIGHT = 8.5;
+const SELECT_CHART_FONT_SIZE = "8.5px";
+const UNSELECT_CHART_FONT_SIZE = "8px";
 const LEGEND_X = 11;
 const LEGEND_Y = 7;
 const LEGEND_X_OFFSET = 113;
@@ -26,7 +26,7 @@ const TICK_FONT_SIZE = "10px";
 const TICK_FONT_WEIGHT = 300;
 const ROBOTO_CONDENSED = "Roboto Condensed";
 const LEGEND_RECT_SIZE = 8;
-const margin = { top: 14, right: 30, bottom: 30, left: 60 };
+const margin = { top: 15, right: 22, bottom: 30, left: 58 };
 
 interface Props {
   width: number;
@@ -69,8 +69,8 @@ export default React.memo(function EmbeddingTooltip({
   useEffect(() => {
     if (!svgRef.current) return;
 
-    const width = 260;
-    const height = 260;
+    const width = 265;
+    const height = 270;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -314,23 +314,31 @@ export default React.memo(function EmbeddingTooltip({
       className="flex justify-center items-center z-100"
     >
       <div className="text-sm">
-        <img src={imageUrl} alt="cifar-10" width="176" height="176" />
-        <div className="mt-1">
-          <span>Ground Truth:</span>{" "}
-          <span className="font-semibold">{groundTruth}</span>
-        </div>
-        <div className="flex flex-col">
-          <p>Predicted Class</p>
-          <p className="flex items-center text-nowrap">
-            <BaselineNeuralNetworkIcon className="mr-1" />
-            <span className="mr-0.5">Baseline:</span>
-            <span className="font-semibold">{baselinePrediction}</span>
-          </p>
-          <p className="flex items-center text-nowrap">
-            <ComparisonNeuralNetworkIcon className="mr-1" />
-            <span className="mr-0.5">Comparison:</span>
-            <span className="font-semibold">{comparisonPrediction}</span>
-          </p>
+        <img
+          src={imageUrl}
+          alt="cifar-10"
+          width="180"
+          height="180"
+          className="mb-1.5 ml-0.5"
+        />
+        <div>
+          <div className="mt-1">
+            <span>Ground Truth:</span>{" "}
+            <span className="font-semibold">{groundTruth}</span>
+          </div>
+          <div className="flex flex-col">
+            <p>Predicted Class</p>
+            <p className="flex items-center text-nowrap">
+              <BaselineNeuralNetworkIcon className="mr-1" />
+              <span className="mr-0.5">Baseline:</span>
+              <span className="font-semibold">{baselinePrediction}</span>
+            </p>
+            <p className="flex items-center text-nowrap">
+              <ComparisonNeuralNetworkIcon className="mr-1" />
+              <span className="mr-0.5">Comparison:</span>
+              <span className="font-semibold">{comparisonPrediction}</span>
+            </p>
+          </div>
         </div>
       </div>
       <div>
