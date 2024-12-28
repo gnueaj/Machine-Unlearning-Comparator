@@ -13,12 +13,15 @@ const LOW_OPACITY = 0.6;
 const HIGH_OPACITY = 1;
 const TICK_PADDING = 6;
 const BAR_HEIGHT = 8;
+const SELECT_CHART_FONT_SIZE = "8px";
+const UNSELECT_CHART_FONT_SIZE = "7.5px";
 const LEGEND_X = 11;
 const LEGEND_Y = 7;
 const LEGEND_X_OFFSET = 113;
 const LEGEND_GAP = 55;
 const LEGEND_FONT_SIZE = "10px";
 const GRID_LINE_COLOR = "#d8d8d8";
+const GRAY_COLOR = "#898989";
 const TICK_FONT_SIZE = "10px";
 const TICK_FONT_WEIGHT = 300;
 const ROBOTO_CONDENSED = "Roboto Condensed";
@@ -222,9 +225,12 @@ export default React.memo(function EmbeddingTooltip({
           .attr("x", margin.left + barWidth + 4)
           .attr("y", y + BAR_HEIGHT / 2)
           .attr("dy", "0.35em")
-          .attr("font-size", "8px")
+          .attr(
+            "font-size",
+            isBaseline ? SELECT_CHART_FONT_SIZE : UNSELECT_CHART_FONT_SIZE
+          )
           .attr("font-family", ROBOTO_CONDENSED)
-          .attr("fill", isBaseline ? BLACK : "#898989")
+          .attr("fill", isBaseline ? BLACK : GRAY_COLOR)
           .text(d.value);
       });
 
@@ -259,9 +265,12 @@ export default React.memo(function EmbeddingTooltip({
           .attr("x", margin.left + barWidth + 4)
           .attr("y", y + BAR_HEIGHT / 2)
           .attr("dy", "0.35em")
-          .attr("font-size", "8px")
+          .attr(
+            "font-size",
+            !isBaseline ? SELECT_CHART_FONT_SIZE : UNSELECT_CHART_FONT_SIZE
+          )
           .attr("font-family", ROBOTO_CONDENSED)
-          .attr("fill", !isBaseline ? BLACK : "#898989")
+          .attr("fill", !isBaseline ? BLACK : GRAY_COLOR)
           .text(d.value);
       });
 
