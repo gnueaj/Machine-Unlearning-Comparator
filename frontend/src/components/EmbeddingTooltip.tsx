@@ -12,7 +12,8 @@ const BLACK = "black";
 const LOW_OPACITY = 0.6;
 const HIGH_OPACITY = 1;
 const TICK_PADDING = 6;
-const BAR_HEIGHT = 8.5;
+const BAR_HEIGHT = 8;
+const BAR_GAP = 1;
 const SELECT_CHART_FONT_SIZE = "8.5px";
 const UNSELECT_CHART_FONT_SIZE = "8px";
 const LEGEND_X = 11;
@@ -241,7 +242,8 @@ export default React.memo(function EmbeddingTooltip({
       .each(function (d: { class: number; value: number }, i: number) {
         const g = d3.select(this);
         const barWidth = xScale(d.value) - margin.left;
-        const y = (yScale(forgetClassNames[d.class]) ?? 0) + BAR_HEIGHT;
+        const y =
+          (yScale(forgetClassNames[d.class]) ?? 0) + BAR_HEIGHT + BAR_GAP;
 
         g.append("rect")
           .attr("x", margin.left)
