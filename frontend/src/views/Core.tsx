@@ -95,31 +95,33 @@ function UnderLine() {
 }
 
 function EmbeddingLegend() {
+  const { forgetClass } = useContext(ForgetClassContext);
+
   return (
-    <div className="flex items-center border border-b-white rounded-t-[6px] px-2 py-1 relative top-[2px] text-sm z-10">
+    <div className="flex items-center border border-b-white rounded-t-[6px] px-2 py-1 relative top-0.5 text-sm z-10">
       <div className="flex items-center mr-5">
         <span className="font-medium mr-2.5">Data Type</span>
-        <ul className="flex items-center gap-2.5">
+        <ul className="flex items-center gap-[9.2px]">
           <li className="flex items-center">
-            <CircleIcon className="w-2 h-2 mr-1.5 text-[#4f5562]" />
+            <CircleIcon className="w-2 h-2 mr-1 text-[#4f5562]" />
             <span>Remaining Data</span>
           </li>
           <li className="flex items-center">
-            <MultiplicationSignIcon className="text-[#4f5562] mr-1.5" />
+            <MultiplicationSignIcon className="text-[#4f5562] mr-0.5" />
             <span>Forgetting Target</span>
           </li>
         </ul>
       </div>
       <div className="flex items-center">
         <span className="font-medium mr-2.5">Prediction</span>
-        <ul className="flex items-center gap-2.5">
+        <ul className="flex items-center gap-[9.2px]">
           {forgetClassNames.map((name, idx) => (
             <li key={idx} className="flex items-center">
               <div
                 style={{ backgroundColor: TABLEAU10[idx] }}
                 className="w-3.5 h-3.5 mr-1"
               />
-              <span>{name}</span>
+              <span>{forgetClass === idx ? name + " (X)" : name}</span>
             </li>
           ))}
         </ul>
