@@ -15,6 +15,7 @@ import * as d3 from "d3";
 
 import EmbeddingTooltip from "./EmbeddingTooltip";
 import { calculateZoom } from "../app/App";
+import { API_URL } from "../constants/common";
 import { ForgetClassContext } from "../store/forget-class-context";
 import { BaselineComparisonContext } from "../store/baseline-comparison-context";
 import { Mode, SelectedData, HovereInstance, Prob } from "../views/Embeddings";
@@ -85,24 +86,29 @@ const ScatterPlot = forwardRef(
     const tooltipRef = useRef<HTMLDivElement | null>(null);
     const rootRef = useRef<Root | null>(null);
     const fetchControllerRef = useRef<AbortController | null>(null);
-    const circlesRef = useRef<d3.Selection<
-      SVGCircleElement,
-      (number | Prob)[],
-      SVGGElement,
-      undefined
-    > | null>(null);
-    const crossesRef = useRef<d3.Selection<
-      SVGPathElement,
-      (number | Prob)[],
-      SVGGElement,
-      undefined
-    > | null>(null);
-    const gMainRef = useRef<d3.Selection<
-      SVGGElement,
-      unknown,
-      null,
-      undefined
-    > | null>(null);
+    const svgElements = useRef<{
+      svg: d3.Selection<SVGSVGElement, unknown, null, undefined> | null;
+      gMain: d3.Selection<SVGGElement, unknown, null, undefined> | null;
+      gDot: d3.Selection<SVGGElement, unknown, null, undefined> | null;
+      circles: d3.Selection<
+        SVGCircleElement,
+        (number | Prob)[],
+        SVGGElement,
+        undefined
+      > | null;
+      crosses: d3.Selection<
+        SVGPathElement,
+        (number | Prob)[],
+        SVGGElement,
+        undefined
+      > | null;
+    }>({
+      svg: null,
+      gMain: null,
+      gDot: null,
+      circles: null,
+      crosses: null,
+    });
 
     const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
 
@@ -198,21 +204,21 @@ const ScatterPlot = forwardRef(
 
     const handleZoom = useCallback(
       (transform: d3.ZoomTransform) => {
-        if (gMainRef.current) {
-          gMainRef.current.attr("transform", transform.toString());
+        if (!svgElements.current.gMain) return;
 
-          if (circlesRef.current) {
-            circlesRef.current.attr("r", CONFIG.dotSize / transform.k);
-          }
+        svgElements.current.gMain.attr("transform", transform.toString());
 
-          if (crossesRef.current) {
-            crossesRef.current.attr("transform", (d) => {
-              const xPos = x(d[0] as number);
-              const yPos = y(d[1] as number);
-              const scale = 1 / transform.k;
-              return `translate(${xPos},${yPos}) scale(${scale}) rotate(45)`;
-            });
-          }
+        if (svgElements.current.circles) {
+          svgElements.current.circles.attr("r", CONFIG.dotSize / transform.k);
+        }
+
+        if (svgElements.current.crosses) {
+          svgElements.current.crosses.attr("transform", (d) => {
+            const xPos = x(d[0] as number);
+            const yPos = y(d[1] as number);
+            const scale = 1 / transform.k;
+            return `translate(${xPos},${yPos}) scale(${scale}) rotate(45)`;
+          });
         }
       },
       [x, y]
@@ -226,32 +232,36 @@ const ScatterPlot = forwardRef(
       });
 
     useEffect(() => {
-      if (!svgRef.current) return;
+      if (!svgElements.current.svg) return;
 
-      const svg = svgRef.current;
-      d3.select(svg).style("cursor", "grab");
+      const svg = svgElements.current.svg;
+      svg.style("cursor", "grab");
 
       const handleMouseDown = () => {
-        d3.select(svg).style("cursor", "grabbing");
+        svg.style("cursor", "grabbing");
       };
 
       const handleMouseUp = () => {
-        console.log("up!");
-        d3.select(svg).style("cursor", "grab");
+        svg.style("cursor", "grab");
       };
 
-      svg.addEventListener("mousedown", handleMouseDown);
-      svg.addEventListener("mouseup", handleMouseUp, true);
-      window.addEventListener("mouseup", handleMouseUp);
+      const node = svg.node();
+      if (node) {
+        node.addEventListener("mousedown", handleMouseDown);
+        node.addEventListener("mouseup", handleMouseUp, true);
+        window.addEventListener("mouseup", handleMouseUp);
 
-      zoomRef.current = zoom;
-      d3.select<SVGSVGElement, undefined>(svg).call(zoom);
+        zoomRef.current = zoom;
+        svg.call(zoom as any);
+      }
 
       return () => {
-        d3.select(svg).on(".zoom", null);
-        svg.removeEventListener("mousedown", handleMouseDown);
-        svg.removeEventListener("mouseup", handleMouseUp, true);
-        window.removeEventListener("mouseup", handleMouseUp);
+        if (node) {
+          node.removeEventListener("mousedown", handleMouseDown);
+          node.removeEventListener("mouseup", handleMouseUp, true);
+          window.removeEventListener("mouseup", handleMouseUp);
+          svg.on(".zoom", null);
+        }
       };
     }, [zoom]);
 
@@ -265,13 +275,16 @@ const ScatterPlot = forwardRef(
     };
 
     useEffect(() => {
+      const elementMap = elementMapRef.current;
+      const tooltip = tooltipRef.current;
+      const fetchController = fetchControllerRef.current;
+      const root = rootRef.current;
+
       return () => {
-        if (tooltipRef.current) {
-          tooltipRef.current.remove();
-        }
-        if (fetchControllerRef.current) {
-          fetchControllerRef.current.abort();
-        }
+        if (elementMap) elementMap.clear();
+        if (tooltip) tooltip.remove();
+        if (fetchController) fetchController.abort();
+        if (root) root.unmount();
       };
     }, []);
 
@@ -286,7 +299,6 @@ const ScatterPlot = forwardRef(
       const containerRect = containerRef.current.getBoundingClientRect();
       const zoom = calculateZoom();
 
-      // 마우스 좌표를 확대/축소 비율에 맞게 조정
       let xPos = (event.clientX - containerRect.left) / zoom + 10;
       let yPos = (event.clientY - containerRect.top) / zoom + 10;
 
@@ -353,9 +365,17 @@ const ScatterPlot = forwardRef(
         fetchControllerRef.current = controller;
 
         try {
+          const response = await fetch(`${API_URL}/image/cifar10/${d[4]}`, {
+            signal: controller.signal,
+          });
+
+          if (!response.ok) throw new Error("Failed to fetch image");
+
+          const blob = await response.blob();
           if (controller.signal.aborted) return;
 
           const prob = d[5] as Prob;
+          const imageUrl = URL.createObjectURL(blob);
 
           const currentHoveredInstance = hoveredInstanceRef.current;
 
@@ -389,7 +409,7 @@ const ScatterPlot = forwardRef(
             <EmbeddingTooltip
               width={CONFIG.tooltipXSize}
               height={CONFIG.tooltipYSize}
-              imageUrl={`${process.env.PUBLIC_URL}/cifar10_images/${d[4]}.png`}
+              imageUrl={imageUrl}
               data={d}
               barChartData={barChartData}
               forgetClass={forgetClass!}
@@ -398,6 +418,10 @@ const ScatterPlot = forwardRef(
           );
 
           showTooltip(event, tooltipContent);
+
+          return () => {
+            URL.revokeObjectURL(imageUrl);
+          };
         } catch (err) {
           if (err instanceof Error && err.name === "AbortError") return;
           console.error("Failed to fetch tooltip data:", err);
@@ -442,17 +466,14 @@ const ScatterPlot = forwardRef(
       [mode, onHover, z]
     );
 
-    useEffect(() => {
-      if (!svgRef.current || data.length === 0 || !idExist) {
-        if (svgRef.current) {
-          d3.select(svgRef.current).selectAll("*").remove();
-        }
-        return;
-      }
+    const transformedData = useMemo(() => {
+      const forgetClassData = data.filter((d) => d[2] === forgetClass);
+      const normalData = data.filter((d) => d[2] !== forgetClass);
+      return { forgetClassData, normalData };
+    }, [data, forgetClass]);
 
-      elementMapRef.current.clear();
-
-      d3.select(svgRef.current).selectAll("*").remove();
+    const initializeSvg = useCallback(() => {
+      if (!svgRef.current) return;
 
       const svg = d3
         .select(svgRef.current)
@@ -462,7 +483,6 @@ const ScatterPlot = forwardRef(
         .attr("preserveAspectRatio", "xMidYMid meet");
 
       const gMain = svg.append("g");
-      gMainRef.current = gMain;
 
       gMain
         .append("rect")
@@ -473,9 +493,23 @@ const ScatterPlot = forwardRef(
 
       const gDot = gMain.append("g");
 
-      const circles = gDot
+      svgElements.current = {
+        svg,
+        gMain,
+        gDot,
+        circles: null,
+        crosses: null,
+      };
+    }, []);
+
+    const updateElements = useCallback(() => {
+      if (!svgElements.current.gDot) return;
+
+      const { gDot } = svgElements.current;
+
+      svgElements.current.circles = gDot
         .selectAll<SVGCircleElement, (number | Prob)[]>("circle")
-        .data(data.filter((d) => d[2] !== forgetClass))
+        .data(transformedData.normalData)
         .join("circle")
         .attr("cx", (d) => x(d[0] as number))
         .attr("cy", (d) => y(d[1] as number))
@@ -488,9 +522,9 @@ const ScatterPlot = forwardRef(
           elementMapRef.current.set(d[4] as number, this);
         });
 
-      const crosses = gDot
+      svgElements.current.crosses = gDot
         .selectAll<SVGPathElement, (number | Prob)[]>("path")
-        .data(data.filter((d) => d[2] === forgetClass))
+        .data(transformedData.forgetClassData)
         .join("path")
         .attr(
           "transform",
@@ -516,47 +550,70 @@ const ScatterPlot = forwardRef(
           elementMapRef.current.set(d[4] as number, this);
         });
 
-      circles
-        .on("click", handleInstanceClick)
-        .on("mouseenter", handleMouseEnter)
-        .on("mouseleave", handleMouseLeave);
+      if (svgElements.current.circles) {
+        svgElements.current.circles
+          .on("click", handleInstanceClick)
+          .on("mouseenter", handleMouseEnter)
+          .on("mouseleave", handleMouseLeave);
+      }
 
-      crosses
-        .on("click", handleInstanceClick)
-        .on("mouseenter", handleMouseEnter)
-        .on("mouseleave", handleMouseLeave);
+      if (svgElements.current.crosses) {
+        svgElements.current.crosses
+          .on("click", handleInstanceClick)
+          .on("mouseenter", handleMouseEnter)
+          .on("mouseleave", handleMouseLeave);
+      }
+    }, [
+      transformedData,
+      x,
+      y,
+      z,
+      handleInstanceClick,
+      handleMouseEnter,
+      handleMouseLeave,
+    ]);
 
-      circlesRef.current = circles;
-      crossesRef.current = crosses;
+    useEffect(() => {
+      if (!svgRef.current || data.length === 0 || !idExist) {
+        if (svgRef.current) {
+          d3.select(svgRef.current).selectAll("*").remove();
+          svgElements.current = {
+            svg: null,
+            gMain: null,
+            gDot: null,
+            circles: null,
+            crosses: null,
+          };
+        }
+        return;
+      }
+
+      elementMapRef.current.clear();
+
+      if (!svgElements.current.svg) {
+        initializeSvg();
+      }
+
+      updateElements();
 
       return () => {
-        if (circlesRef.current) {
-          circlesRef.current
+        if (svgElements.current.circles) {
+          svgElements.current.circles
             .on("click", null)
             .on("mouseenter", null)
             .on("mouseleave", null);
         }
-        if (crossesRef.current) {
-          crossesRef.current
+        if (svgElements.current.crosses) {
+          svgElements.current.crosses
             .on("click", null)
             .on("mouseenter", null)
             .on("mouseleave", null);
         }
       };
-    }, [
-      data,
-      forgetClass,
-      handleInstanceClick,
-      handleMouseEnter,
-      handleMouseLeave,
-      x,
-      y,
-      z,
-      idExist,
-    ]);
+    }, [data.length, idExist, initializeSvg, updateElements]);
 
     useEffect(() => {
-      if (!circlesRef.current && !crossesRef.current) return;
+      if (!svgElements.current.circles && !svgElements.current.crosses) return;
 
       const updateOpacity = (selection: d3.Selection<any, any, any, any>) => {
         selection
@@ -581,11 +638,11 @@ const ScatterPlot = forwardRef(
           });
       };
 
-      if (circlesRef.current) {
-        updateOpacity(circlesRef.current);
+      if (svgElements.current.circles) {
+        updateOpacity(svgElements.current.circles);
       }
-      if (crossesRef.current) {
-        updateOpacity(crossesRef.current);
+      if (svgElements.current.crosses) {
+        updateOpacity(svgElements.current.crosses);
       }
     }, [forgetClass, viewMode]);
 
@@ -707,22 +764,7 @@ const ScatterPlot = forwardRef(
             />
             <div className="flex items-center absolute z-10 right-0 top-6">
               <span className="mr-1.5 text-sm">View:</span>
-              <Select
-                value={viewMode}
-                defaultValue={VIEW_MODES[0]}
-                onValueChange={(value: ViewModeType) => setViewMode(value)}
-              >
-                <SelectTrigger className="w-36 h-6">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {VIEW_MODES.map((viewMode, idx) => (
-                    <SelectItem key={idx} value={viewMode}>
-                      {viewMode}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ViewModeSelect viewMode={viewMode} setViewMode={setViewMode} />
             </div>
           </div>
         )}
@@ -756,3 +798,31 @@ const ScatterPlot = forwardRef(
 );
 
 export default React.memo(ScatterPlot);
+
+interface ViewModeSelectorProps {
+  viewMode: ViewModeType;
+  setViewMode: (val: ViewModeType) => void;
+}
+
+const ViewModeSelect = React.memo(
+  ({ viewMode, setViewMode }: ViewModeSelectorProps) => {
+    return (
+      <Select
+        value={viewMode}
+        defaultValue={VIEW_MODES[0]}
+        onValueChange={(value: ViewModeType) => setViewMode(value)}
+      >
+        <SelectTrigger className="w-36 h-6">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {VIEW_MODES.map((viewMode, idx) => (
+            <SelectItem key={idx} value={viewMode}>
+              {viewMode}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+);
