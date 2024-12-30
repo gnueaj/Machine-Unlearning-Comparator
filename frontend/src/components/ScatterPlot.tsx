@@ -706,7 +706,7 @@ const ScatterPlot = forwardRef(
               onClick={resetZoom}
             />
             <div className="flex items-center absolute z-10 right-0 top-6">
-              <span className="mr-1.5 text-sm">Highlight:</span>
+              <span className="mr-1.5 text-sm">View:</span>
               <Select
                 value={viewMode}
                 defaultValue={VIEW_MODES[0]}
