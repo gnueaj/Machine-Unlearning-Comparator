@@ -1,5 +1,6 @@
 import React, { useState, useContext } from "react";
 
+import View from "../components/View";
 import Title from "../components/Title";
 import Indicator from "../components/Indicator";
 import Embeddings from "./Embeddings";
@@ -41,7 +42,7 @@ export default function Core({
   const isEmbeddingMode = displayMode === EMBEDDINGS;
 
   return (
-    <section style={{ width, height }} className="p-1 border border-l-0">
+    <View width={width} height={height} className="border-l-0">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-1 mb-0.5 relative right-1">
           <Title
@@ -84,7 +85,7 @@ export default function Core({
       ) : (
         <Indicator about="ForgetClass" />
       )}
-    </section>
+    </View>
   );
 }
 

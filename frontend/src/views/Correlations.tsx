@@ -1,5 +1,6 @@
 import { useState, useContext } from "react";
 
+import View from "../components/View";
 import Title from "../components/Title";
 import Indicator from "../components/Indicator";
 import LineChart from "../components/LineChart";
@@ -25,10 +26,7 @@ export default function Correlations({
   const allSelected = baseline !== "" && comparison !== "";
 
   return (
-    <section
-      style={{ width, height }}
-      className="p-1 flex flex-col border relative"
-    >
+    <View width={width} height={height}>
       <div className="flex justify-between">
         <Title
           Icon={<Layers02Icon />}
@@ -48,6 +46,6 @@ export default function Correlations({
       ) : (
         <Indicator about="ForgetClass" />
       )}
-    </section>
+    </View>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useContext } from "react";
 import * as d3 from "d3";
 
+import View from "../components/View";
 import Title from "../components/Title";
 import DatasetModeSelector from "../components/DatasetModeSelector";
 import BubbleChart from "../components/BubbleChart";
@@ -34,10 +35,7 @@ export default function Predictions({
   const allSelected = baseline !== "" && comparison !== "";
 
   return (
-    <section
-      style={{ width, height }}
-      className="p-1 flex flex-col border transition-all z-10 relative"
-    >
+    <View width={width} height={height}>
       <div className="flex justify-between">
         <Title
           Icon={<Target02Icon />}
@@ -74,7 +72,7 @@ export default function Predictions({
         <Indicator about="ForgetClass" />
       )}
       {allSelected && forgetClassExist && <BubbleChartLegend />}
-    </section>
+    </View>
   );
 }
 
@@ -106,7 +104,7 @@ function BubbleChartLegend() {
   );
 }
 
-const ColorBar = () => {
+function ColorBar() {
   const steps = 10;
   const colors = Array.from({ length: steps }, (_, i) => {
     const percent = (i / (steps - 1)) * 100;
@@ -130,4 +128,4 @@ const ColorBar = () => {
       </div>
     </div>
   );
-};
+}

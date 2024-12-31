@@ -1,24 +1,12 @@
-import { useContext, useMemo, useRef, useCallback, useState } from "react";
+import { useContext, useMemo, useRef, useCallback } from "react";
 
+import View from "../components/View";
+import InformationButton from "../components/InformationButton";
 import ScatterPlot from "../components/ScatterPlot";
 import ConnectionLineWrapper from "../components/ConnectionLineWrapper";
 import { ExperimentsContext } from "../store/experiments-context";
 import { Separator } from "../components/UI/separator";
 import { extractSelectedData } from "../utils/data/experiments";
-import {
-  HelpCircleIcon,
-  CursorPointerIcon,
-  ScrollVerticalIcon,
-  DragIcon,
-} from "../components/UI/icons";
-import {
-  Dialog,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogContent,
-  DialogTrigger,
-} from "../components/UI/dialog";
 
 export type Coordinate = { x: number; y: number };
 type Position = {
@@ -38,8 +26,6 @@ export type SelectedData = (number | Prob)[][];
 export default function Embeddings({ height }: { height: number }) {
   const { baselineExperiment, comparisonExperiment } =
     useContext(ExperimentsContext);
-
-  const [open, setOpen] = useState(false);
 
   const hoveredInstanceRef = useRef<HovereInstance>(null);
   const positionRef = useRef<Position>({ from: null, to: null });
@@ -120,64 +106,12 @@ export default function Embeddings({ height }: { height: number }) {
   );
 
   return (
-    <div
-      style={{ height }}
-      className="w-full flex justify-start px-1.5 items-center border-[1px] border-solid rounded-[6px] rounded-tr-none relative"
+    <View
+      height={height}
+      className="w-full flex items-center rounded-[6px] px-1.5 rounded-tr-none"
     >
       <ConnectionLineWrapper positionRef={positionRef} />
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger>
-          <HelpCircleIcon className="z-10 w-4 h-4 absolute left-7 top-[7px] cursor-pointer" />
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[320px] p-4">
-          <DialogHeader className="hidden">
-            <DialogTitle></DialogTitle>
-            <DialogDescription></DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-5">
-            <div>
-              <p className="font-semibold leading-none tracking-tight mb-1.5">
-                Embeddings
-              </p>
-              <p className="text-sm text-muted-foreground">
-                The scatter plots present two-dimensional UMAP projections of
-                the 512-dimensional penultimate-layer activations. These
-                activations were extracted from 2,000 data points in the
-                training dataset.
-              </p>
-            </div>
-            <div>
-              <p className="font-semibold leading-none tracking-tight mb-1.5">
-                Controls
-              </p>
-              <div className="text-sm flex flex-col gap-1">
-                <div className="flex items-center gap-1">
-                  <CursorPointerIcon />
-                  <span>
-                    Click{" "}
-                    <span className="text-muted-foreground">
-                      a point for details
-                    </span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <ScrollVerticalIcon />
-                  <span>
-                    Scroll{" "}
-                    <span className="text-muted-foreground">to zoom</span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <DragIcon />
-                  <span>
-                    Drag <span className="text-muted-foreground">to pan</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <InformationButton />
       <ScatterPlot
         mode="Baseline"
         height={height}
@@ -195,6 +129,6 @@ export default function Embeddings({ height }: { height: number }) {
         hoveredInstance={hoveredInstanceRef.current}
         ref={comparisonRef}
       />
-    </div>
+    </View>
   );
 }

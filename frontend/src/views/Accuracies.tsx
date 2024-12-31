@@ -1,5 +1,6 @@
 import { useMemo, useContext, useState } from "react";
 
+import View from "../components/View";
 import Title from "../components/Title";
 import Indicator from "../components/Indicator";
 import VerticalBarChart from "../components/VerticalBarChart";
@@ -53,10 +54,7 @@ export default function Accuracies({
   const maxGap = Math.max(trainMaxGap, testMaxGap);
 
   return (
-    <section
-      style={{ width, height }}
-      className="p-1 flex flex-col border border-t-0 relative"
-    >
+    <View width={width} height={height} className="border-t-0">
       <Title
         Icon={<Chart01Icon />}
         title="Accuracies"
@@ -90,6 +88,6 @@ export default function Accuracies({
       ) : (
         <Indicator about="ForgetClass" />
       )}
-    </section>
+    </View>
   );
 }
