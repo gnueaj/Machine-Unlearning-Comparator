@@ -32,14 +32,13 @@ export default function Core({
   const [displayMode, setDisplayMode] = useState(EMBEDDINGS);
 
   const forgetClassExist = forgetClass !== undefined;
+  const isEmbeddingMode = displayMode === EMBEDDINGS;
 
   const handleDisplayModeChange = (e: React.MouseEvent<HTMLDivElement>) => {
     const id = e.currentTarget.id;
     if (id === EMBEDDINGS) setDisplayMode(EMBEDDINGS);
     else setDisplayMode(ATTACK);
   };
-
-  const isEmbeddingMode = displayMode === EMBEDDINGS;
 
   return (
     <View width={width} height={height} className="border-l-0">
