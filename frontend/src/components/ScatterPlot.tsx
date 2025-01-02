@@ -517,13 +517,17 @@ const ScatterPlot = forwardRef(
 
       const { gDot } = svgElements.current;
 
+      const currentTransform = svgRef.current
+        ? d3.zoomTransform(svgRef.current)
+        : d3.zoomIdentity;
+
       svgElements.current.circles = gDot
         .selectAll<SVGCircleElement, (number | Prob)[]>("circle")
         .data(transformedData.normalData)
         .join("circle")
         .attr("cx", (d) => x(d[0] as number))
         .attr("cy", (d) => y(d[1] as number))
-        .attr("r", CONFIG.dotSize)
+        .attr("r", CONFIG.dotSize / currentTransform.k)
         .attr("fill", (d) => z(d[3] as number))
         .style("cursor", "pointer")
         .style("opacity", CONFIG.defaultCircleOpacity)
@@ -536,11 +540,13 @@ const ScatterPlot = forwardRef(
         .selectAll<SVGPathElement, (number | Prob)[]>("path")
         .data(transformedData.forgetClassData)
         .join("path")
-        .attr(
-          "transform",
-          (d) =>
-            `translate(${x(d[0] as number)},${y(d[1] as number)}) rotate(45)`
-        )
+        .attr("transform", (d) => {
+          const xPos = x(d[0] as number);
+          const yPos = y(d[1] as number);
+          const scale = 1 / currentTransform.k;
+
+          return `translate(${xPos},${yPos}) scale(${scale}) rotate(45)`;
+        })
         .attr(
           "d",
           d3
@@ -625,18 +631,36 @@ const ScatterPlot = forwardRef(
     useEffect(() => {
       if (!svgElements.current.circles && !svgElements.current.crosses) return;
 
+      const currentTransform = svgRef.current
+        ? d3.zoomTransform(svgRef.current)
+        : d3.zoomIdentity;
+
       const updateOpacity = (selection: d3.Selection<any, any, any, any>) => {
+        const isCircle = selection.node()?.tagName === "circle";
+
         selection
           .style("opacity", (d: any) =>
             shouldLowerOpacity(d)
               ? CONFIG.loweredOpacity
-              : selection.node()?.tagName === "circle"
+              : isCircle
               ? CONFIG.defaultCircleOpacity
               : CONFIG.defaultCrossOpacity
           )
           .style("pointer-events", (d: any) =>
             shouldLowerOpacity(d) ? "none" : "auto"
           );
+
+        if (isCircle) {
+          selection.attr("r", CONFIG.dotSize / currentTransform.k);
+        } else {
+          selection.attr("transform", (d: any) => {
+            const xPos = x(d[0] as number);
+            const yPos = y(d[1] as number);
+            const scale = 1 / currentTransform.k;
+
+            return `translate(${xPos},${yPos}) scale(${scale}) rotate(45)`;
+          });
+        }
       };
 
       if (svgElements.current.circles) {
@@ -645,7 +669,7 @@ const ScatterPlot = forwardRef(
       if (svgElements.current.crosses) {
         updateOpacity(svgElements.current.crosses);
       }
-    }, [shouldLowerOpacity]);
+    }, [shouldLowerOpacity, x, y]);
 
     useEffect(() => {
       if (!hoveredInstance) return;
