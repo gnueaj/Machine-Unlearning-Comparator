@@ -21,16 +21,15 @@ export const useExperimentsStore = create<ExperimentsState>()(
       isExperimentLoading: false,
 
       addExperiment: (experiment, tempIdx) => {
-        const { points, ...experimentWithoutPoints } = experiment;
         const newExperiments =
           tempIdx !== undefined
             ? {
                 ...get().experiments,
-                [tempIdx]: experimentWithoutPoints,
+                [tempIdx]: experiment,
               }
             : {
                 ...get().experiments,
-                [experiment.ID]: experimentWithoutPoints,
+                [experiment.ID]: experiment,
               };
         set({ experiments: newExperiments });
       },

@@ -2,6 +2,7 @@
   "name": "my-app",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://gnueaj.github.io/Machine-Unlearning-Comparator/",
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
     "@fortawesome/free-regular-svg-icons": "^6.5.2",
@@ -31,6 +32,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
+    "gh-pages": "^6.3.0",
     "lucide-react": "^0.438.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -49,7 +51,9 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "dev": "pnpm start"
+    "dev": "pnpm start",
+    "predeploy": "pnpm run build",
+    "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
     "extends": [

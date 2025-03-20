@@ -90,4 +90,4 @@ export type ExperimentData = {
 
 export type Experiment = Omit<ExperimentData, "points">;
 
-export type Experiments = { [key: string]: Experiment };
+export type Experiments = { [key: string]: ExperimentData };

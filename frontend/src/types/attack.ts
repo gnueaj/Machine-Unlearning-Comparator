@@ -15,10 +15,13 @@ export type Data = {
 
 export type CategoryType = "unlearn" | "retrain";
 
-export interface Image {
+export interface ImageWithLabel {
   index: number;
+  label: number;
   base64: string;
 }
+
+export type Image = Omit<ImageWithLabel, "label">;
 
 export interface TooltipData {
   img_idx: number;

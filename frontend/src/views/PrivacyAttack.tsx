@@ -6,9 +6,9 @@ import AttackAnalytics from "../components/PrivacyAttack/AttackAnalytics";
 import { Prob } from "../types/embeddings";
 import { Separator } from "../components/UI/separator";
 import { useModelDataStore } from "../stores/modelDataStore";
-import { fetchFileData } from "../utils/api/unlearning";
 import { useForgetClassStore } from "../stores/forgetClassStore";
 import { useAttackStateStore } from "../stores/attackStore";
+import { useExperimentsStore } from "../stores/experimentsStore";
 import { ExperimentData } from "../types/data";
 import { ENTROPY, UNLEARN } from "../constants/common";
 import { THRESHOLD_STRATEGIES } from "../constants/privacyAttack";
@@ -25,6 +25,7 @@ export default function PrivacyAttack({ modelAPoints, modelBPoints }: Props) {
   const setMetric = useAttackStateStore((state) => state.setMetric);
   const setDirection = useAttackStateStore((state) => state.setDirection);
   const setStrategy = useAttackStateStore((state) => state.setStrategy);
+  const experiments = useExperimentsStore((state) => state.experiments);
 
   const [retrainData, setRetrainData] = useState<ExperimentData>();
 
@@ -40,18 +41,13 @@ export default function PrivacyAttack({ modelAPoints, modelBPoints }: Props) {
   useEffect(() => {
     async function loadRetrainData() {
       if (forgetClass === -1) return;
-      try {
-        const data = await fetchFileData(forgetClass, `a00${forgetClass}`);
-        setRetrainData(data);
-      } catch (error) {
-        console.error(`Failed to fetch an retrained data file: ${error}`);
-      }
+      setRetrainData(experiments[`a00${forgetClass}`]);
     }
     loadRetrainData();
-  }, [forgetClass]);
+  }, [experiments, forgetClass]);
 
   return (
-    <div className="h-[760px] flex flex-col border rounded-md px-1.5">
+    <div className="h-[758px] flex flex-col border rounded-md px-1.5">
       <Legend />
       <div className="flex items-center">
         {!retrainData ? (
@@ -68,7 +64,7 @@ export default function PrivacyAttack({ modelAPoints, modelBPoints }: Props) {
         )}
         <Separator
           orientation="vertical"
-          className="h-[630px] w-[1px] mx-1 relative top-3.5"
+          className="h-[635px] w-[1px] mx-1 relative top-3"
         />
         {!retrainData ? (
           <Indicator text="Failed to fetch retrain data" />

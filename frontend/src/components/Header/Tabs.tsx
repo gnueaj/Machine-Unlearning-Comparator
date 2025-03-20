@@ -3,10 +3,10 @@ import { useState } from "react";
 import Tab from "./Tab";
 import ForgetClassTabPlusButton from "./TabPlusButton";
 import { CIFAR_10_CLASSES } from "../../constants/common";
-import { Experiment, Experiments } from "../../types/data";
+import { Experiments } from "../../types/data";
 import { useExperimentsStore } from "../../stores/experimentsStore";
 import { useForgetClassStore } from "../../stores/forgetClassStore";
-import { fetchAllExperimentsData } from "../../utils/api/unlearning";
+import { loadExperimentData } from "../../constants/models";
 
 export default function Tabs() {
   const saveExperiments = useExperimentsStore((state) => state.saveExperiments);
@@ -25,18 +25,8 @@ export default function Tabs() {
     const classIndex = CIFAR_10_CLASSES.indexOf(forgetClass);
     setIsExperimentsLoading(true);
     try {
-      const allData: Experiments = await fetchAllExperimentsData(classIndex);
-
-      if ("detail" in allData) {
-        saveExperiments({});
-      } else {
-        Object.values(allData).forEach((experiment: Experiment) => {
-          if (experiment && "points" in experiment) {
-            delete experiment.points;
-          }
-        });
-        saveExperiments(allData);
-      }
+      const data: Experiments = await loadExperimentData(classIndex);
+      saveExperiments(data);
     } finally {
       setIsExperimentsLoading(false);
     }
