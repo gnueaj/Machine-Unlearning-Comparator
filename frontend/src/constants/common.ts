@@ -1,8 +1,7 @@
-// export const API_URL = "http://115.145.171.130:8000";
 export const API_URL = "http://localhost:8000";
 
-export const DATASETS = ["CIFAR-10", "Imagenette"];
-export const NEURAL_NETWORK_MODELS = ["ResNet-18", "ViT-B/16"];
+export const DATASETS = ["CIFAR-10"];
+export const NEURAL_NETWORK_MODELS = ["ResNet-18"];
 
 export const TRAIN = "train";
 export const TEST = "test";
