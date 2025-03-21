@@ -223,7 +223,7 @@ export const RTEHeader = ({
           variant="ghost"
           onClick={() => handleSorting(column)}
         >
-          RTE
+          RT
           <UnfoldMoreIcon
             className="w-4 text-muted-foreground"
             sortOrder={sortOrder}
@@ -231,7 +231,7 @@ export const RTEHeader = ({
         </Button>
       </HoverCardTrigger>
       <HoverCardContent className="w-auto px-3 py-2" side="top">
-        Run-Time Efficiency
+        Run-Time
       </HoverCardContent>
     </HoverCard>
   );
