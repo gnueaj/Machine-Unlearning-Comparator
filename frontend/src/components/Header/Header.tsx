@@ -1,7 +1,8 @@
 import Tabs from "./Tabs";
-import { Logo } from "../UI/icons";
+import { GithubIcon, Logo } from "../UI/icons";
 import { useBaseConfigStore } from "../../stores/baseConfigStore";
 import { DATASETS, NEURAL_NETWORK_MODELS } from "../../constants/common";
+import { Button } from "../UI/button";
 import {
   Select,
   SelectContent,
@@ -80,6 +81,17 @@ export default function Header() {
           </div>
         </div>
         <Tabs />
+      </div>
+      <div className="flex items-center">
+        <a 
+          href="https://github.com/gnueaj/Machine-Unlearning-Comparator" 
+          target="_blank" 
+          rel="noopener noreferrer"
+        >
+          <Button variant="link" size="icon" asChild>
+            <GithubIcon />
+          </Button>
+        </a>
       </div>
     </div>
   );
