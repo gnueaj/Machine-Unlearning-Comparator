@@ -37,7 +37,7 @@ dependencies = [
   "python-multipart",
   "seaborn",
   "huggingface_hub",
-  "pytorch-cka>=0.1.3",
+  "pytorch-cka>=1.0.1",
 ]
 
 
