@@ -104,4 +104,10 @@ If you use this tool in your research, please cite our paper:
 }
 ```
 
-![Star History Chart](https://api.star-history.com/svg?repos=gnueaj/Machine-Unlearning-Comparator&type=Date)
+<a href="https://www.star-history.com/?repos=gnueaj%2FMachine-Unlearning-Comparator&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=gnueaj/Machine-Unlearning-Comparator&type=date&theme=dark&legend=top-left&sealed_token=0AxbyoEmFlqBym-nzLogEQUbf_kJq3W-u2D83wKdyFkZ4lBss-M3Wiv7IIk0Tv1NvloaW_I5yUJWHIRT71AaQQDjXrSR6vAuTw0M3AUbmEu4wLmNj3NxzS5XZLCjirAuK4LosdgbLU8Yh2bdUS-ZmSo4JsjTzFSxbCMJnnJEPFNl8c9G5cqMtSQYn2ur" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=gnueaj/Machine-Unlearning-Comparator&type=date&legend=top-left&sealed_token=0AxbyoEmFlqBym-nzLogEQUbf_kJq3W-u2D83wKdyFkZ4lBss-M3Wiv7IIk0Tv1NvloaW_I5yUJWHIRT71AaQQDjXrSR6vAuTw0M3AUbmEu4wLmNj3NxzS5XZLCjirAuK4LosdgbLU8Yh2bdUS-ZmSo4JsjTzFSxbCMJnnJEPFNl8c9G5cqMtSQYn2ur" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=gnueaj/Machine-Unlearning-Comparator&type=date&legend=top-left&sealed_token=0AxbyoEmFlqBym-nzLogEQUbf_kJq3W-u2D83wKdyFkZ4lBss-M3Wiv7IIk0Tv1NvloaW_I5yUJWHIRT71AaQQDjXrSR6vAuTw0M3AUbmEu4wLmNj3NxzS5XZLCjirAuK4LosdgbLU8Yh2bdUS-ZmSo4JsjTzFSxbCMJnnJEPFNl8c9G5cqMtSQYn2ur" />
+ </picture>
+</a>
