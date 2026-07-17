@@ -5,13 +5,14 @@
 [![Paper](https://img.shields.io/badge/Paper-TVCG-b31b1b?logo=read-the-docs&logoColor=white)](https://ieeexplore.ieee.org/document/11364307)
 [![GitHub Stars](https://img.shields.io/github/stars/gnueaj/Machine-Unlearning-Comparator?style=social)](https://github.com/gnueaj/Machine-Unlearning-Comparator)
 
-A web-based visual analytics system for the comparative evaluation of Machine Unlearning (MU) methods.
+📢 **[Jul 2026]** Check out our follow-up work, **[Unlearning Depth Score](https://github.com/gnueaj/unlearning-depth-score)** — going beyond output-level metrics to measure unlearning depth!
+
 
 ![Teaser Animation](https://github.com/user-attachments/assets/fc7d992e-7770-44c7-89bc-8e5596a9f3ff)
-
-This system helps researchers systematically compare MU methods based on three core principles: **accuracy, efficiency, and privacy**. The workflow is structured into four stages: **Build → Screen → Contrast → Attack**.
+Unlearning Comparator is a web-based visual analytics system for the comparative evaluation of Machine Unlearning (MU) methods. <br>
 
 ![Unlearning Comparator Workflow](https://github.com/user-attachments/assets/a76837a6-df39-42c1-adb1-8a976ca41fe3)
+This system helps researchers systematically compare MU methods based on three core principles: **accuracy, efficiency, and privacy**. The workflow is structured into four stages: **Build → Screen → Contrast → Attack**.
 
 ## ✨ Key Features
 
