@@ -90,7 +90,11 @@ export default function DataTable({ isExpanded }: Props) {
         const isSelected = currentSelection === row.id;
         const radioDistance = isModelAColumn ? "left-1" : "left-0.5";
         return (
-          <RadioGroup className="flex justify-center items-center">
+          <RadioGroup
+            className="flex justify-center items-center"
+            value={isSelected ? row.id : ""}
+            onValueChange={saveModel}
+          >
             <RadioGroupItem
               value={row.id}
               className={cn(
@@ -98,7 +102,6 @@ export default function DataTable({ isExpanded }: Props) {
                 isSelected && "[&_svg]:h-3 [&_svg]:w-3"
               )}
               checked={isSelected}
-              onClick={() => saveModel(row.id)}
               disabled={disabledValue === row.id}
               color={isModelAColumn ? COLORS.EMERALD : COLORS.PURPLE}
             />

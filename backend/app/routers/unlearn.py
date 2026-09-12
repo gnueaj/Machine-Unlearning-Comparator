@@ -62,6 +62,20 @@ class UnlearningRequest(BaseModel):
         description="Number of last layers to reinitialize (0-9)"
     )
 
+def get_base_weights_path(request: UnlearningRequest) -> str:
+    name = (
+        f"000{request.forget_class}.pth"
+        if request.base_weights == "0000.pth"
+        else request.base_weights
+    )
+    path = f"unlearned_models/{request.forget_class}/{name}"
+    if not os.path.exists(path):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Weights '{path}' not found in unlearned_models/ folder",
+        )
+    return path
+
 @router.post("/unlearn/ga")
 async def start_unlearning_ga(
     background_tasks: BackgroundTasks,
@@ -73,13 +87,7 @@ async def start_unlearning_ga(
             detail="Unlearning is already in progress"
         )
     status.reset()
-    base_weights_name = f"000{request.forget_class}.pth" if request.base_weights == "0000.pth" else request.base_weights
-    base_weights_path = f'unlearned_models/{request.forget_class}/{base_weights_name}'
-    if not os.path.exists(base_weights_path):
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Weights '{base_weights_path}' not found in unlearned_models/ folder"
-        )
+    base_weights_path = get_base_weights_path(request)
 
     background_tasks.add_task(run_unlearning_GA, request, status, base_weights_path)
     return {"message": "GA Unlearning started"}
@@ -95,13 +103,7 @@ async def start_unlearning_rl(
             detail="Unlearning is already in progress"
         )
     status.reset()
-    base_weights_name = f"000{request.forget_class}.pth" if request.base_weights == "0000.pth" else request.base_weights
-    base_weights_path = f'unlearned_models/{request.forget_class}/{base_weights_name}'
-    if not os.path.exists(base_weights_path):  
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Weights '{base_weights_path}' not found in unlearned_models/ folder"
-        )
+    base_weights_path = get_base_weights_path(request)
 
     background_tasks.add_task(run_unlearning_RL, request, status, base_weights_path)
     return {"message": "RL Unlearning started"}
@@ -117,13 +119,7 @@ async def start_unlearning_ft(
             detail="Unlearning is already in progress"
         )
     status.reset()
-    base_weights_name = f"000{request.forget_class}.pth" if request.base_weights == "0000.pth" else request.base_weights
-    base_weights_path = f'unlearned_models/{request.forget_class}/{base_weights_name}'
-    if not os.path.exists(base_weights_path):
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Weights '{base_weights_path}' not found in unlearned_models/ folder"
-        )
+    base_weights_path = get_base_weights_path(request)
     print(f"start unlearning ft with base_weights_path: {base_weights_path}")
     background_tasks.add_task(run_unlearning_FT, request, status, base_weights_path)
     return {"message": "FT Unlearning started"}
@@ -139,13 +135,7 @@ async def start_unlearning_ga_ft(
             detail="Unlearning is already in progress"
         )
     status.reset()
-    base_weights_name = f"000{request.forget_class}.pth" if request.base_weights == "0000.pth" else request.base_weights
-    base_weights_path = f'unlearned_models/{request.forget_class}/{base_weights_name}'
-    if not os.path.exists(base_weights_path):
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Weights '{base_weights_path}' not found in unlearned_models/ folder"
-        )
+    base_weights_path = get_base_weights_path(request)
     print(f"start unlearning GA+FT with base_weights_path: {base_weights_path}")
     background_tasks.add_task(run_unlearning_GA_FT, request, status, base_weights_path)
     return {"message": "GA+FT Unlearning started"}
@@ -161,13 +151,7 @@ async def start_unlearning_ga_sl_ft(
             detail="Unlearning is already in progress"
         )
     status.reset()
-    base_weights_name = f"000{request.forget_class}.pth" if request.base_weights == "0000.pth" else request.base_weights
-    base_weights_path = f'unlearned_models/{request.forget_class}/{base_weights_name}'
-    if not os.path.exists(base_weights_path):
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Weights '{base_weights_path}' not found in unlearned_models/ folder"
-        )
+    base_weights_path = get_base_weights_path(request)
     print(f"start unlearning GA+SL+FT with base_weights_path: {base_weights_path}")
     background_tasks.add_task(run_unlearning_GA_SL_FT, request, status, base_weights_path)
     return {"message": "GA+SL+FT Unlearning started"}
@@ -183,13 +167,7 @@ async def start_unlearning_ga_sl_ft_v2(
             detail="Unlearning is already in progress"
         )
     status.reset()
-    base_weights_name = f"000{request.forget_class}.pth" if request.base_weights == "0000.pth" else request.base_weights
-    base_weights_path = f'unlearned_models/{request.forget_class}/{base_weights_name}'
-    if not os.path.exists(base_weights_path):
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Weights '{base_weights_path}' not found in unlearned_models/ folder"
-        )
+    base_weights_path = get_base_weights_path(request)
     print(f"start unlearning GA+SL+FT V2 with base_weights_path: {base_weights_path}")
     print(f"Layer modifications - Freeze first {request.freeze_first_k_layers} layers, Reinit last {request.reinit_last_k_layers} layers")
     background_tasks.add_task(run_unlearning_GA_SL_FT_V2, request, status, base_weights_path)
@@ -206,13 +184,7 @@ async def start_unlearning_scrub(
             detail="Unlearning is already in progress"
         )
     status.reset()
-    base_weights_name = f"000{request.forget_class}.pth" if request.base_weights == "0000.pth" else request.base_weights
-    base_weights_path = f'unlearned_models/{request.forget_class}/{base_weights_name}'
-    if not os.path.exists(base_weights_path):
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Weights '{base_weights_path}' not found in unlearned_models/ folder"
-        )
+    base_weights_path = get_base_weights_path(request)
     print(f"start unlearning SCRUB with base_weights_path: {base_weights_path}")
     background_tasks.add_task(run_unlearning_SCRUB, request, status, base_weights_path)
     return {"message": "SCRUB Unlearning started"}
@@ -228,13 +200,7 @@ async def start_unlearning_salun(
             detail="Unlearning is already in progress"
         )
     status.reset()
-    base_weights_name = f"000{request.forget_class}.pth" if request.base_weights == "0000.pth" else request.base_weights
-    base_weights_path = f'unlearned_models/{request.forget_class}/{base_weights_name}'
-    if not os.path.exists(base_weights_path):
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Weights '{base_weights_path}' not found in unlearned_models/ folder"
-        )
+    base_weights_path = get_base_weights_path(request)
     print(f"start unlearning SalUn with base_weights_path: {base_weights_path}")
     background_tasks.add_task(run_unlearning_SalUn, request, status, base_weights_path)
     return {"message": "SalUn Unlearning started"}

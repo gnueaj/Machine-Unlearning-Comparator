@@ -186,6 +186,303 @@ function createThresholdGroup(
   return group;
 }
 
+function circleOpacity(
+  yPos: number,
+  thresholdY: number,
+  isAboveThresholdUnlearn: boolean
+) {
+  const isCircleAboveThreshold = yPos < thresholdY;
+  return isAboveThresholdUnlearn
+    ? isCircleAboveThreshold
+      ? CONFIG.OPACITY_ABOVE_THRESHOLD
+      : CONFIG.OPACITY_BELOW_THRESHOLD
+    : isCircleAboveThreshold
+    ? CONFIG.OPACITY_BELOW_THRESHOLD
+    : CONFIG.OPACITY_ABOVE_THRESHOLD;
+}
+
+function setThresholdLabelText(
+  group: d3.Selection<SVGGElement, unknown, null, undefined>,
+  isAboveThresholdUnlearn: boolean,
+  isModelA: boolean
+) {
+  const modelLabel = isModelA ? "Model A" : "Model B";
+  const modelColor = isModelA ? COLORS.EMERALD : COLORS.PURPLE;
+
+  group
+    .select(".threshold-label-up tspan:nth-child(2)")
+    .attr("fill", isAboveThresholdUnlearn ? modelColor : COLORS.DARK_GRAY)
+    .text(isAboveThresholdUnlearn ? modelLabel : "Retrained");
+
+  group
+    .select(".threshold-label-down tspan:nth-child(2)")
+    .attr("fill", isAboveThresholdUnlearn ? COLORS.DARK_GRAY : modelColor)
+    .text(isAboveThresholdUnlearn ? "Retrained" : modelLabel);
+}
+
+function applyCircleOpacities(
+  svg: SVGSVGElement | null,
+  hoveredId: number | null,
+  thresholdValue: number,
+  isAboveThresholdUnlearn: boolean,
+  yScale: d3.ScaleLinear<number, number> | null
+) {
+  if (!svg || !yScale) return;
+  const thY = yScale(thresholdValue);
+  d3.select(svg)
+    .selectAll<SVGCircleElement, Bin>(".retrain-circle, .unlearn-circle")
+    .each(function (d) {
+      const sel = d3.select(this);
+      const opacity =
+        hoveredId !== null
+          ? d.img_idx === hoveredId
+            ? CONFIG.OPACITY_ABOVE_THRESHOLD
+            : CONFIG.OPACITY_BELOW_THRESHOLD
+          : circleOpacity(+sel.attr("cy"), thY, isAboveThresholdUnlearn);
+      sel.attr("fill-opacity", opacity).attr("stroke-opacity", opacity);
+    });
+}
+
+function applyHoverLabels(
+  svg: SVGSVGElement | null,
+  hoveredId: number | null,
+  metric: string
+) {
+  if (!svg) return;
+  const gB = d3.select(svg).select(".butterfly-plot");
+  gB.selectAll(".hovered-label").remove();
+  if (hoveredId === null) return;
+
+  gB.selectAll<SVGCircleElement, Bin>("circle")
+    .filter((d) => d != null && d.img_idx === hoveredId)
+    .each(function (d) {
+      const cx = d3.select(this).attr("cx");
+      const cy = d3.select(this).attr("cy");
+      const cxNum = parseFloat(cx);
+      const offset = 4;
+      const textAnchor = cxNum < 0 ? "end" : "start";
+      const labelX = cxNum < 0 ? cxNum - offset : cxNum + offset;
+      const labelY = Number(cy) - offset;
+      gB.append("text")
+        .attr("class", "hovered-label")
+        .attr("x", labelX)
+        .attr("y", labelY)
+        .attr("text-anchor", textAnchor)
+        .attr("font-size", "12px")
+        .attr("fill", CONFIG.BLACK)
+        .attr(
+          "style",
+          "text-shadow: -0.5px -0.5px 0 white, 0.5px -0.5px 0 white, -0.5px 0.5px 0 white, 0.5px 0.5px 0 white;"
+        )
+        .text(
+          `${metric.charAt(0).toUpperCase() + metric.slice(1)}: ${d.value}`
+        );
+    });
+  gB.selectAll(".hovered-label").raise();
+}
+
+function paintButterflyLegend(
+  gB: d3.Selection<any, unknown, null, undefined>,
+  isAboveThresholdUnlearn: boolean,
+  isModelA: boolean,
+  isLegendVisible: boolean
+) {
+  gB.select(".butterfly-legend-group").remove();
+
+  const BUTTERFLY_LEGEND_DATA = getButterflyLegendData(
+    isAboveThresholdUnlearn,
+    isModelA
+  );
+
+  const butterflyLegendGroup = gB
+    .append("g")
+    .attr("class", "butterfly-legend-group")
+    .attr("transform", "translate(-3, 21)")
+    .style("display", isLegendVisible ? "block" : "none");
+
+  butterflyLegendGroup
+    .insert("rect", ":first-child")
+    .attr("x", -172)
+    .attr("y", -18.5)
+    .attr("width", 350)
+    .attr("height", 36)
+    .attr("fill", "white")
+    .attr("opacity", 0.6)
+    .attr("stroke", "#d6d6d6")
+    .attr("stroke-width", 1.5)
+    .attr("rx", 2)
+    .attr("ry", 2);
+
+  let leftCounter = 0;
+  let rightCounter = 0;
+  BUTTERFLY_LEGEND_DATA.forEach((item) => {
+    let xPos, yPos;
+    if (item.side === "left") {
+      xPos = CONFIG.BUTTERFLY_CHART_LEGEND_SQUARE_POSITIONS[0];
+      yPos =
+        leftCounter === 0
+          ? CONFIG.BUTTERFLY_CHART_LEGEND_VERTICAL_SPACING / 2
+          : -CONFIG.BUTTERFLY_CHART_LEGEND_VERTICAL_SPACING / 2;
+      leftCounter++;
+    } else {
+      xPos = CONFIG.BUTTERFLY_CHART_LEGEND_SQUARE_POSITIONS[1];
+      yPos =
+        rightCounter === 0
+          ? CONFIG.BUTTERFLY_CHART_LEGEND_VERTICAL_SPACING / 2
+          : -CONFIG.BUTTERFLY_CHART_LEGEND_VERTICAL_SPACING / 2;
+      rightCounter++;
+    }
+
+    butterflyLegendGroup
+      .append("rect")
+      .attr("x", xPos)
+      .attr("y", yPos - CONFIG.BUTTERFLY_CHART_LEGEND_SQUARE_SIZE / 2)
+      .attr("width", CONFIG.BUTTERFLY_CHART_LEGEND_SQUARE_SIZE)
+      .attr("height", CONFIG.BUTTERFLY_CHART_LEGEND_SQUARE_SIZE)
+      .attr("fill", item.color);
+
+    if (item.side === "left") {
+      butterflyLegendGroup
+        .append("text")
+        .attr("x", xPos - CONFIG.BUTTERFLY_CHART_LEGEND_TEXT_GAP)
+        .attr("y", yPos)
+        .attr("text-anchor", "end")
+        .attr("dominant-baseline", "middle")
+        .attr("font-size", FONT_CONFIG.FONT_SIZE_12)
+        .text(item.label);
+    } else {
+      butterflyLegendGroup
+        .append("text")
+        .attr(
+          "x",
+          xPos +
+            CONFIG.BUTTERFLY_CHART_LEGEND_SQUARE_SIZE +
+            CONFIG.BUTTERFLY_CHART_LEGEND_TEXT_GAP
+        )
+        .attr("y", yPos)
+        .attr("text-anchor", "start")
+        .attr("dominant-baseline", "middle")
+        .attr("font-size", FONT_CONFIG.FONT_SIZE_12)
+        .text(item.label);
+    }
+  });
+}
+
+function lineChartLayout() {
+  const wL =
+    CONFIG.LINE_CHART_WIDTH -
+    CONFIG.LINE_MARGIN.left -
+    CONFIG.LINE_MARGIN.right;
+  const hL =
+    CONFIG.HEIGHT - CONFIG.LINE_MARGIN.top - CONFIG.LINE_MARGIN.bottom;
+  return { wL, hL };
+}
+
+function updateIntersections(
+  gL: d3.Selection<any, unknown, null, undefined>,
+  attackData: AttackResult[],
+  thresholdValue: number,
+  xScaleL: d3.ScaleLinear<number, number>,
+  yScaleL: d3.ScaleLinear<number, number>
+) {
+  const intGroup = gL.select(".intersection-group");
+  intGroup.selectAll("circle").remove();
+
+  const addDots = (
+    accessor: (d: AttackResult) => number,
+    fill: string,
+    className?: string
+  ) => {
+    getIntersections(
+      attackData,
+      accessor,
+      thresholdValue,
+      xScaleL,
+      yScaleL
+    ).forEach((pt) => {
+      const circle = intGroup
+        .append("circle")
+        .attr("cx", pt.x)
+        .attr("cy", pt.y)
+        .attr("r", CONFIG.BUTTERFLY_CIRCLE_RADIUS)
+        .attr("fill", fill)
+        .attr("stroke", CONFIG.BLACK)
+        .attr("stroke-width", 1);
+      if (className) circle.attr("class", className);
+    });
+  };
+
+  addDots((d) => d.attack_score, CONFIG.RED, "intersection-red");
+  addDots((d) => d.fpr, CONFIG.BLUE);
+  addDots((d) => d.fnr, CONFIG.GREEN);
+}
+
+function updateInfoGroup(
+  gL: d3.Selection<any, unknown, null, undefined>,
+  attackData: AttackResult[],
+  thresholdValue: number,
+  xScaleL: d3.ScaleLinear<number, number>,
+  yScaleL: d3.ScaleLinear<number, number>,
+  isMetricEntropy: boolean,
+  strategy: string
+) {
+  const currentData = attackData.reduce(
+    (prev, curr) =>
+      Math.abs(curr.threshold - thresholdValue) <
+      Math.abs(prev.threshold - thresholdValue)
+        ? curr
+        : prev,
+    attackData[0]
+  );
+
+  const redInts = getIntersections(
+    attackData,
+    (d) => d.attack_score,
+    thresholdValue,
+    xScaleL,
+    yScaleL
+  );
+  const attackIntersectPos =
+    redInts.length > 0
+      ? redInts[0]
+      : { x: xScaleL(0), y: yScaleL(thresholdValue) };
+  const infoGroupXPos =
+    currentData.attack_score >= CONFIG.ATTACK_SCORE_X_LIMIT_FOR_INFO_GROUP
+      ? xScaleL(CONFIG.ATTACK_SCORE_X_LIMIT_FOR_INFO_GROUP)
+      : attackIntersectPos.x;
+  const effectiveThreshold = isMetricEntropy
+    ? Math.min(thresholdValue, CONFIG.ENTROPY_THRESHOLD_Y_LIMIT_FOR_INFO_GROUP)
+    : Math.min(
+        thresholdValue,
+        CONFIG.CONFIDENCE_THRESHOLD_Y_LIMIT_FOR_INFO_GROUP
+      );
+  const infoGroupYPos = yScaleL(effectiveThreshold);
+
+  const infoGroup = gL.select(".info-group");
+  infoGroup.attr(
+    "transform",
+    `translate(${infoGroupXPos + 4}, ${infoGroupYPos - 47})`
+  );
+  infoGroup
+    .select(".info-threshold")
+    .attr(
+      "fill",
+      strategy === THRESHOLD_STRATEGIES[3].strategy ? "red" : CONFIG.BLACK
+    )
+    .text(`Threshold: ${thresholdValue.toFixed(2)}`);
+  infoGroup
+    .select(".info-attack-score")
+    .attr(
+      "fill",
+      strategy === THRESHOLD_STRATEGIES[1].strategy ? "red" : CONFIG.BLACK
+    )
+    .text(`Attack Score: ${currentData.attack_score.toFixed(3)}`);
+  infoGroup.select(".info-fpr").text(`FPR: ${currentData.fpr.toFixed(3)}`);
+  infoGroup.select(".info-fnr").text(`FNR: ${currentData.fnr.toFixed(3)}`);
+
+  return currentData.attack_score;
+}
+
 interface Props {
   mode: "A" | "B";
   thresholdValue: number;
@@ -216,7 +513,6 @@ export default function AttackPlot({
   const modelAExperiment = useModelAExperiment();
   const modelBExperiment = useModelBExperiment();
   const metric = useAttackStateStore((state) => state.metric);
-  const direction = useAttackStateStore((state) => state.direction);
   const strategy = useAttackStateStore((state) => state.strategy);
 
   const [isLegendVisible, setIsLegendVisible] = useState(true);
@@ -224,16 +520,31 @@ export default function AttackPlot({
 
   const butterflyRef = useRef<SVGSVGElement | null>(null);
   const lineRef = useRef<SVGSVGElement | null>(null);
-  const chartInitialized = useRef<boolean>(false);
-  const attackDataRef = useRef<AttackResult[]>([]);
   const panOffset = useRef(0);
   const butterflyThresholdRef = useRef<SVGGElement | null>(null);
   const lineYScaleRef = useRef<d3.ScaleLinear<number, number> | null>(null);
+  const lineXScaleRef = useRef<d3.ScaleLinear<number, number> | null>(null);
   const prevStrategy = useRef(strategy);
+  const prevAboveUnlearnForLegend = useRef<boolean | null>(null);
   const lineThresholdRef = useRef<SVGGElement | null>(null);
   const butterflyYScaleRef = useRef<d3.ScaleLinear<number, number> | null>(
     null
   );
+
+  const hoveredIdRef = useRef(hoveredId);
+  const thresholdValueRef = useRef(thresholdValue);
+  const isAboveThresholdUnlearnRef = useRef(false);
+  const isLegendVisibleRef = useRef(isLegendVisible);
+  const isLineLegendVisibleRef = useRef(isLineLegendVisible);
+  const metricRef = useRef(metric);
+  const strategyRef = useRef(strategy);
+  const setHoveredIdRef = useRef(setHoveredId);
+  const onElementClickRef = useRef(onElementClick);
+  const onThresholdLineDragRef = useRef(onThresholdLineDrag);
+  const onUpdateAttackScoreRef = useRef(onUpdateAttackScore);
+  const thresholdMinRef = useRef(0);
+  const thresholdMaxRef = useRef(0);
+  const thresholdStepRef = useRef(0);
 
   const retrainJson = data?.retrainData;
   const unlearnJson = data?.unlearnData;
@@ -258,19 +569,20 @@ export default function AttackPlot({
     ? CONFIG.ENTROPY_THRESHOLD_STEP
     : CONFIG.CONFIDENCE_THRESHOLD_STEP;
 
-  const getCircleOpacity = useCallback(
-    (yPos: number, th: number) => {
-      const isCircleAboveThreshold = yPos < th;
-      return isAboveThresholdUnlearn
-        ? isCircleAboveThreshold
-          ? CONFIG.OPACITY_ABOVE_THRESHOLD
-          : CONFIG.OPACITY_BELOW_THRESHOLD
-        : isCircleAboveThreshold
-        ? CONFIG.OPACITY_BELOW_THRESHOLD
-        : CONFIG.OPACITY_ABOVE_THRESHOLD;
-    },
-    [isAboveThresholdUnlearn]
-  );
+  hoveredIdRef.current = hoveredId;
+  thresholdValueRef.current = thresholdValue;
+  isAboveThresholdUnlearnRef.current = isAboveThresholdUnlearn;
+  isLegendVisibleRef.current = isLegendVisible;
+  isLineLegendVisibleRef.current = isLineLegendVisible;
+  metricRef.current = metric;
+  strategyRef.current = strategy;
+  setHoveredIdRef.current = setHoveredId;
+  onElementClickRef.current = onElementClick;
+  onThresholdLineDragRef.current = onThresholdLineDrag;
+  onUpdateAttackScoreRef.current = onUpdateAttackScore;
+  thresholdMinRef.current = thresholdMin;
+  thresholdMaxRef.current = thresholdMax;
+  thresholdStepRef.current = thresholdStep;
 
   const drawButterflyChart = useCallback(() => {
     if (
@@ -282,7 +594,6 @@ export default function AttackPlot({
     )
       return;
 
-    attackDataRef.current = attackData;
     const binSize = isMetricEntropy
       ? CONFIG.ENTROPY_THRESHOLD_STEP
       : CONFIG.CONFIDENCE_THRESHOLD_STEP;
@@ -346,6 +657,7 @@ export default function AttackPlot({
     svgB.selectAll("*").remove();
     const gB = svgB
       .append("g")
+      .attr("class", "butterfly-plot")
       .attr(
         "transform",
         `translate(${CONFIG.BUTTERFLY_MARGIN.left + halfWB}, ${
@@ -549,16 +861,23 @@ export default function AttackPlot({
       .attr("text-anchor", "middle")
       .text(isMetricEntropy ? "Entropy" : "Top-1 Confidence");
 
-    // Draw retrain circles
+    const currentHoveredId = hoveredIdRef.current;
+    const currentThreshold = thresholdValueRef.current;
+    const currentAboveUnlearn = isAboveThresholdUnlearnRef.current;
+
     retrainBins.forEach((bin) => {
       const yPos = yScaleB(bin.threshold + binSize / 2);
       bin.bins.forEach((currentBin, i) => {
         const opacity =
-          hoveredId !== null
-            ? currentBin.img_idx === hoveredId
+          currentHoveredId !== null
+            ? currentBin.img_idx === currentHoveredId
               ? CONFIG.OPACITY_ABOVE_THRESHOLD
               : CONFIG.OPACITY_BELOW_THRESHOLD
-            : getCircleOpacity(yPos, yScaleB(thresholdValue));
+            : circleOpacity(
+                yPos,
+                yScaleB(currentThreshold),
+                currentAboveUnlearn
+              );
         const originalXDomain = -(bin.bins.length - 1 - i + 0.5);
         gB.append("circle")
           .attr("clip-path", "url(#clip-butterfly)")
@@ -577,25 +896,28 @@ export default function AttackPlot({
           .attr("stroke-opacity", opacity)
           .attr("cursor", "pointer")
           .attr("data-original-x", originalXDomain)
-          .on("mouseover", (_, d) => setHoveredId(d.img_idx))
-          .on("mouseout", () => setHoveredId(null))
+          .on("mouseover", (_, d) => setHoveredIdRef.current(d.img_idx))
+          .on("mouseout", () => setHoveredIdRef.current(null))
           .on("click", (event, d) =>
-            onElementClick(event, { ...d, type: RETRAIN })
+            onElementClickRef.current(event, { ...d, type: RETRAIN })
           );
       });
     });
 
-    // Draw unlearn circles
     unlearnBins.forEach((bin) => {
       const yPos = yScaleB(bin.threshold + binSize / 2);
       const color = isModelA ? COLORS.EMERALD : COLORS.PURPLE;
       bin.bins.forEach((currentBin, i) => {
         const opacity =
-          hoveredId !== null
-            ? currentBin.img_idx === hoveredId
+          currentHoveredId !== null
+            ? currentBin.img_idx === currentHoveredId
               ? CONFIG.OPACITY_ABOVE_THRESHOLD
               : CONFIG.OPACITY_BELOW_THRESHOLD
-            : getCircleOpacity(yPos, yScaleB(thresholdValue));
+            : circleOpacity(
+                yPos,
+                yScaleB(currentThreshold),
+                currentAboveUnlearn
+              );
         const originalXDomain = i + 0.5;
         gB.append("circle")
           .attr("clip-path", "url(#clip-butterfly)")
@@ -611,92 +933,20 @@ export default function AttackPlot({
           .attr("stroke-opacity", opacity)
           .attr("cursor", "pointer")
           .attr("data-original-x", originalXDomain)
-          .on("mouseover", (_, d) => setHoveredId(d.img_idx))
-          .on("mouseout", () => setHoveredId(null))
+          .on("mouseover", (_, d) => setHoveredIdRef.current(d.img_idx))
+          .on("mouseout", () => setHoveredIdRef.current(null))
           .on("click", (event, d) =>
-            onElementClick(event, { ...d, type: UNLEARN })
+            onElementClickRef.current(event, { ...d, type: UNLEARN })
           );
       });
     });
 
-    // Draw a legend
-    const BUTTERFLY_LEGEND_DATA = getButterflyLegendData(
-      isAboveThresholdUnlearn,
-      isModelA
+    paintButterflyLegend(
+      gB,
+      currentAboveUnlearn,
+      isModelA,
+      isLegendVisibleRef.current
     );
-
-    const butterflyLegendGroup = gB
-      .append("g")
-      .attr("class", "butterfly-legend-group")
-      .attr("transform", "translate(-3, 21)")
-      .style("display", isLegendVisible ? "block" : "none");
-
-    butterflyLegendGroup
-      .insert("rect", ":first-child")
-      .attr("x", -172)
-      .attr("y", -18.5)
-      .attr("width", 350)
-      .attr("height", 36)
-      .attr("fill", "white")
-      .attr("opacity", 0.6)
-      .attr("stroke", "#d6d6d6")
-      .attr("stroke-width", 1.5)
-      .attr("rx", 2)
-      .attr("ry", 2);
-
-    let leftCounter = 0;
-    let rightCounter = 0;
-    BUTTERFLY_LEGEND_DATA.forEach((item) => {
-      let xPos, yPos;
-      if (item.side === "left") {
-        xPos = CONFIG.BUTTERFLY_CHART_LEGEND_SQUARE_POSITIONS[0];
-        yPos =
-          leftCounter === 0
-            ? CONFIG.BUTTERFLY_CHART_LEGEND_VERTICAL_SPACING / 2
-            : -CONFIG.BUTTERFLY_CHART_LEGEND_VERTICAL_SPACING / 2;
-        leftCounter++;
-      } else {
-        xPos = CONFIG.BUTTERFLY_CHART_LEGEND_SQUARE_POSITIONS[1];
-        yPos =
-          rightCounter === 0
-            ? CONFIG.BUTTERFLY_CHART_LEGEND_VERTICAL_SPACING / 2
-            : -CONFIG.BUTTERFLY_CHART_LEGEND_VERTICAL_SPACING / 2;
-        rightCounter++;
-      }
-
-      butterflyLegendGroup
-        .append("rect")
-        .attr("x", xPos)
-        .attr("y", yPos - CONFIG.BUTTERFLY_CHART_LEGEND_SQUARE_SIZE / 2)
-        .attr("width", CONFIG.BUTTERFLY_CHART_LEGEND_SQUARE_SIZE)
-        .attr("height", CONFIG.BUTTERFLY_CHART_LEGEND_SQUARE_SIZE)
-        .attr("fill", item.color);
-
-      if (item.side === "left") {
-        butterflyLegendGroup
-          .append("text")
-          .attr("x", xPos - CONFIG.BUTTERFLY_CHART_LEGEND_TEXT_GAP)
-          .attr("y", yPos)
-          .attr("text-anchor", "end")
-          .attr("dominant-baseline", "middle")
-          .attr("font-size", FONT_CONFIG.FONT_SIZE_12)
-          .text(item.label);
-      } else {
-        butterflyLegendGroup
-          .append("text")
-          .attr(
-            "x",
-            xPos +
-              CONFIG.BUTTERFLY_CHART_LEGEND_SQUARE_SIZE +
-              CONFIG.BUTTERFLY_CHART_LEGEND_TEXT_GAP
-          )
-          .attr("y", yPos)
-          .attr("text-anchor", "start")
-          .attr("dominant-baseline", "middle")
-          .attr("font-size", FONT_CONFIG.FONT_SIZE_12)
-          .text(item.label);
-      }
-    });
 
     const buttonGroup = svgB
       .append("g")
@@ -715,61 +965,27 @@ export default function AttackPlot({
       .attr("fill", "transparent");
     buttonGroup
       .append("title")
-      .text(isLegendVisible ? "Hide Legend" : "Show Legend");
+      .text(isLegendVisibleRef.current ? "Hide Legend" : "Show Legend");
     buttonGroup.attr(
       "aria-label",
-      isLegendVisible ? "Hide Legend" : "Show Legend"
+      isLegendVisibleRef.current ? "Hide Legend" : "Show Legend"
     );
 
-    // To resolve not removing hovering effects on circles
     d3.select(butterflyRef.current).on("mousemove", (event) => {
       if (!(event.target instanceof SVGCircleElement)) {
-        setHoveredId(null);
+        setHoveredIdRef.current(null);
       }
     });
 
-    gB.selectAll(".hovered-label").remove();
-    if (hoveredId !== null) {
-      gB.selectAll("circle")
-        .filter(function (d: any) {
-          return d.img_idx === hoveredId;
-        })
-        .each(function (d: any) {
-          const cx = d3.select(this).attr("cx");
-          const cy = d3.select(this).attr("cy");
-          const cxNum = parseFloat(cx);
-          const offset = 4;
-          const textAnchor = cxNum < 0 ? "end" : "start";
-          const labelX = cxNum < 0 ? cxNum - offset : cxNum + offset;
-          const labelY = Number(cy) - offset;
-          const labelText = `${
-            metric.charAt(0).toUpperCase() + metric.slice(1)
-          }: ${d.value}`;
+    applyHoverLabels(butterflyRef.current, currentHoveredId, metricRef.current);
 
-          gB.append("text")
-            .attr("class", "hovered-label")
-            .attr("x", labelX)
-            .attr("y", labelY)
-            .attr("text-anchor", textAnchor)
-            .attr("font-size", "12px")
-            .attr("fill", CONFIG.BLACK)
-            .attr(
-              "style",
-              "text-shadow: -0.5px -0.5px 0 white, 0.5px -0.5px 0 white, -0.5px 0.5px 0 white, 0.5px 0.5px 0 white;"
-            )
-            .text(labelText);
-        });
-      gB.selectAll(".hovered-label").raise();
-    }
-
-    // Create a threshold line group
     const thresholdGroupButterfly = createThresholdGroup(
       gB,
       [-halfWB, halfWB],
       yScaleB,
-      thresholdValue,
+      currentThreshold,
       isStrategyCustom,
-      isAboveThresholdUnlearn,
+      currentAboveUnlearn,
       isModelA
     );
 
@@ -778,31 +994,20 @@ export default function AttackPlot({
   }, [
     attackData,
     data,
-    getCircleOpacity,
-    hoveredId,
-    isAboveThresholdUnlearn,
-    isLegendVisible,
     isMetricEntropy,
     isModelA,
     isStrategyCustom,
-    metric,
-    onElementClick,
     retrainJson,
-    setHoveredId,
     thresholdMax,
     thresholdMin,
-    thresholdValue,
     unlearnJson,
   ]);
 
   const drawLineChart = useCallback(() => {
     if (!attackData || !lineRef.current) return;
-    const wL =
-      CONFIG.LINE_CHART_WIDTH -
-      CONFIG.LINE_MARGIN.left -
-      CONFIG.LINE_MARGIN.right;
-    const hL =
-      CONFIG.HEIGHT - CONFIG.LINE_MARGIN.top - CONFIG.LINE_MARGIN.bottom;
+    const { wL, hL } = lineChartLayout();
+    const currentThreshold = thresholdValueRef.current;
+    const currentAboveUnlearn = isAboveThresholdUnlearnRef.current;
     const xScaleL = d3.scaleLinear().domain([0, 1.05]).range([0, wL]);
     const yScaleL = d3
       .scaleLinear()
@@ -811,6 +1016,7 @@ export default function AttackPlot({
       .clamp(true);
 
     lineYScaleRef.current = yScaleL;
+    lineXScaleRef.current = xScaleL;
 
     const svgL = d3
       .select(lineRef.current)
@@ -819,6 +1025,7 @@ export default function AttackPlot({
     svgL.selectAll("*").remove();
     const gL = svgL
       .append("g")
+      .attr("class", "line-plot")
       .attr(
         "transform",
         `translate(${CONFIG.LINE_MARGIN.left},${CONFIG.LINE_MARGIN.top})`
@@ -841,10 +1048,10 @@ export default function AttackPlot({
       .attr("fill", "transparent");
     lineButtonGroup
       .append("title")
-      .text(isLineLegendVisible ? "Hide Legend" : "Show Legend");
+      .text(isLineLegendVisibleRef.current ? "Hide Legend" : "Show Legend");
     lineButtonGroup.attr(
       "aria-label",
-      isLineLegendVisible ? "Hide Legend" : "Show Legend"
+      isLineLegendVisibleRef.current ? "Hide Legend" : "Show Legend"
     );
 
     // Define the glow filter
@@ -870,18 +1077,20 @@ export default function AttackPlot({
       .append("clipPath")
       .attr("id", `aboveThreshold-${mode}`)
       .append("rect")
+      .attr("class", "clip-above")
       .attr("x", 0)
       .attr("y", 0)
       .attr("width", wL)
-      .attr("height", yScaleL(thresholdValue));
+      .attr("height", yScaleL(currentThreshold));
     defs
       .append("clipPath")
       .attr("id", `belowThreshold-${mode}`)
       .append("rect")
+      .attr("class", "clip-below")
       .attr("x", 0)
-      .attr("y", yScaleL(thresholdValue))
+      .attr("y", yScaleL(currentThreshold))
       .attr("width", wL)
-      .attr("height", hL - yScaleL(thresholdValue));
+      .attr("height", hL - yScaleL(currentThreshold));
 
     // X-axis
     const xAxisL = gL
@@ -950,7 +1159,7 @@ export default function AttackPlot({
       .attr("stroke-width", CONFIG.LINE_WIDTH)
       .attr(
         "stroke-opacity",
-        isAboveThresholdUnlearn
+        currentAboveUnlearn
           ? CONFIG.OPACITY_ABOVE_THRESHOLD
           : CONFIG.OPACITY_BELOW_THRESHOLD
       )
@@ -965,7 +1174,7 @@ export default function AttackPlot({
       .attr("stroke-width", CONFIG.LINE_WIDTH)
       .attr(
         "stroke-opacity",
-        isAboveThresholdUnlearn
+        currentAboveUnlearn
           ? CONFIG.OPACITY_BELOW_THRESHOLD
           : CONFIG.OPACITY_ABOVE_THRESHOLD
       )
@@ -981,7 +1190,7 @@ export default function AttackPlot({
       .attr("stroke-width", CONFIG.LINE_WIDTH)
       .attr(
         "stroke-opacity",
-        isAboveThresholdUnlearn
+        currentAboveUnlearn
           ? CONFIG.OPACITY_ABOVE_THRESHOLD
           : CONFIG.OPACITY_BELOW_THRESHOLD
       )
@@ -995,7 +1204,7 @@ export default function AttackPlot({
       .attr("stroke-width", CONFIG.LINE_WIDTH)
       .attr(
         "stroke-opacity",
-        isAboveThresholdUnlearn
+        currentAboveUnlearn
           ? CONFIG.OPACITY_BELOW_THRESHOLD
           : CONFIG.OPACITY_ABOVE_THRESHOLD
       )
@@ -1010,7 +1219,7 @@ export default function AttackPlot({
       .attr("stroke-width", CONFIG.LINE_WIDTH)
       .attr(
         "stroke-opacity",
-        isAboveThresholdUnlearn
+        currentAboveUnlearn
           ? CONFIG.OPACITY_ABOVE_THRESHOLD
           : CONFIG.OPACITY_BELOW_THRESHOLD
       )
@@ -1024,7 +1233,7 @@ export default function AttackPlot({
       .attr("stroke-width", CONFIG.LINE_WIDTH)
       .attr(
         "stroke-opacity",
-        isAboveThresholdUnlearn
+        currentAboveUnlearn
           ? CONFIG.OPACITY_BELOW_THRESHOLD
           : CONFIG.OPACITY_ABOVE_THRESHOLD
       )
@@ -1036,7 +1245,7 @@ export default function AttackPlot({
       .append("g")
       .attr("class", "line-legend-group")
       .attr("transform", `translate(${wL - 37}, -1.5)`)
-      .style("display", isLineLegendVisible ? "block" : "none");
+      .style("display", isLineLegendVisibleRef.current ? "block" : "none");
 
     lineChartLegendGroup
       .append("rect")
@@ -1076,167 +1285,77 @@ export default function AttackPlot({
         .text(item.label);
     });
 
-    // Create a threshold line group
     const thresholdGroupLine = createThresholdGroup(
       gL,
       [-3, wL],
       yScaleL,
-      thresholdValue,
+      currentThreshold,
       isStrategyCustom,
-      isAboveThresholdUnlearn,
+      currentAboveUnlearn,
       isModelA
     );
 
     lineThresholdRef.current = thresholdGroupLine.node() as SVGGElement;
 
-    // Draw intersection points
-    const intGroup = gL.append("g").attr("class", "intersection-group");
-    const redInts = getIntersections(
+    gL.append("g").attr("class", "intersection-group");
+    updateIntersections(
+      gL,
       attackData,
-      (d) => d.attack_score,
-      thresholdValue,
+      currentThreshold,
       xScaleL,
       yScaleL
     );
-    redInts.forEach((pt) => {
-      intGroup
-        .append("circle")
-        .attr("class", "intersection-red")
-        .attr("cx", pt.x)
-        .attr("cy", pt.y)
-        .attr("r", CONFIG.BUTTERFLY_CIRCLE_RADIUS)
-        .attr("fill", CONFIG.RED)
-        .attr("stroke", CONFIG.BLACK)
-        .attr("stroke-width", 1);
-    });
-    const blueInts = getIntersections(
-      attackData,
-      (d) => d.fpr,
-      thresholdValue,
-      xScaleL,
-      yScaleL
-    );
-    blueInts.forEach((pt) => {
-      intGroup
-        .append("circle")
-        .attr("cx", pt.x)
-        .attr("cy", pt.y)
-        .attr("r", CONFIG.BUTTERFLY_CIRCLE_RADIUS)
-        .attr("fill", CONFIG.BLUE)
-        .attr("stroke", CONFIG.BLACK)
-        .attr("stroke-width", 1);
-    });
-    const greenInts = getIntersections(
-      attackData,
-      (d) => d.fnr,
-      thresholdValue,
-      xScaleL,
-      yScaleL
-    );
-    greenInts.forEach((pt) => {
-      intGroup
-        .append("circle")
-        .attr("cx", pt.x)
-        .attr("cy", pt.y)
-        .attr("r", CONFIG.BUTTERFLY_CIRCLE_RADIUS)
-        .attr("fill", CONFIG.GREEN)
-        .attr("stroke", CONFIG.BLACK)
-        .attr("stroke-width", 1);
-    });
-
-    // Update the info group
-    const currentData = attackData.reduce(
-      (prev, curr) =>
-        Math.abs(curr.threshold - thresholdValue) <
-        Math.abs(prev.threshold - thresholdValue)
-          ? curr
-          : prev,
-      attackData[0]
-    );
-
-    const attackIntersectPos =
-      redInts.length > 0
-        ? redInts[0]
-        : { x: xScaleL(0), y: yScaleL(thresholdValue) };
-    const infoGroupXPos =
-      currentData.attack_score >= CONFIG.ATTACK_SCORE_X_LIMIT_FOR_INFO_GROUP
-        ? xScaleL(CONFIG.ATTACK_SCORE_X_LIMIT_FOR_INFO_GROUP)
-        : attackIntersectPos.x;
-    const effectiveThreshold = isMetricEntropy
-      ? Math.min(
-          thresholdValue,
-          CONFIG.ENTROPY_THRESHOLD_Y_LIMIT_FOR_INFO_GROUP
-        )
-      : Math.min(
-          thresholdValue,
-          CONFIG.CONFIDENCE_THRESHOLD_Y_LIMIT_FOR_INFO_GROUP
-        );
-    const infoGroupYPos = yScaleL(effectiveThreshold);
-
-    const infoGroup = gL
-      .append("g")
-      .attr("class", "info-group")
-      .attr(
-        "transform",
-        `translate(${infoGroupXPos + 4}, ${infoGroupYPos - 47})`
-      );
 
     const textShadowStyle =
       "text-shadow: -0.5px -0.5px 0 white, 0.5px -0.5px 0 white, -0.5px 0.5px 0 white, 0.5px 0.5px 0 white;";
-
+    const infoGroup = gL.append("g").attr("class", "info-group");
     infoGroup
       .append("text")
+      .attr("class", "info-threshold")
       .attr("text-anchor", "start")
-      .attr(
-        "fill",
-        strategy === THRESHOLD_STRATEGIES[3].strategy ? "red" : CONFIG.BLACK
-      )
       .attr("font-size", FONT_CONFIG.FONT_SIZE_12)
-      .attr("style", textShadowStyle)
-      .text(`Threshold: ${thresholdValue.toFixed(2)}`);
-
+      .attr("style", textShadowStyle);
     infoGroup
       .append("text")
+      .attr("class", "info-attack-score")
       .attr("text-anchor", "start")
-      .attr(
-        "fill",
-        strategy === THRESHOLD_STRATEGIES[1].strategy ? "red" : CONFIG.BLACK
-      )
       .attr("font-size", FONT_CONFIG.FONT_SIZE_12)
       .attr("dy", "1.2em")
-      .attr("style", textShadowStyle)
-      .text(`Attack Score: ${currentData.attack_score.toFixed(3)}`);
-
+      .attr("style", textShadowStyle);
     infoGroup
       .append("text")
+      .attr("class", "info-fpr")
       .attr("text-anchor", "start")
       .attr("font-size", FONT_CONFIG.FONT_SIZE_12)
       .attr("dy", "2.4em")
-      .attr("style", textShadowStyle)
-      .text(`FPR: ${currentData.fpr.toFixed(3)}`);
-
+      .attr("style", textShadowStyle);
     infoGroup
       .append("text")
+      .attr("class", "info-fnr")
       .attr("text-anchor", "start")
       .attr("font-size", FONT_CONFIG.FONT_SIZE_12)
       .attr("dy", "3.6em")
-      .attr("style", textShadowStyle)
-      .text(`FNR: ${currentData.fnr.toFixed(3)}`);
+      .attr("style", textShadowStyle);
 
-    onUpdateAttackScore(currentData.attack_score);
+    onUpdateAttackScoreRef.current(
+      updateInfoGroup(
+        gL,
+        attackData,
+        currentThreshold,
+        xScaleL,
+        yScaleL,
+        isMetricEntropy,
+        strategyRef.current
+      )
+    );
   }, [
     attackData,
-    isAboveThresholdUnlearn,
-    isLineLegendVisible,
     isMetricEntropy,
     isModelA,
     isStrategyCustom,
     mode,
-    onUpdateAttackScore,
-    strategy,
     thresholdMax,
     thresholdMin,
-    thresholdValue,
   ]);
 
   useEffect(() => {
@@ -1251,27 +1370,67 @@ export default function AttackPlot({
 
   useEffect(() => {
     if (!data) return;
-    if (!chartInitialized.current) {
-      drawButterflyChart();
-      drawLineChart();
-      chartInitialized.current = true;
-    } else {
-      drawButterflyChart();
-      drawLineChart();
-    }
-  }, [
-    data,
-    thresholdValue,
-    hoveredId,
-    attackData,
-    metric,
-    direction,
-    strategy,
-    drawButterflyChart,
-    drawLineChart,
-  ]);
+    drawButterflyChart();
+    drawLineChart();
+  }, [data, attackData, metric, strategy, modelA, modelB, drawButterflyChart, drawLineChart]);
 
   useEffect(() => {
+    applyCircleOpacities(
+      butterflyRef.current,
+      hoveredId,
+      thresholdValueRef.current,
+      isAboveThresholdUnlearnRef.current,
+      butterflyYScaleRef.current
+    );
+    applyHoverLabels(butterflyRef.current, hoveredId, metricRef.current);
+  }, [hoveredId]);
+
+  useEffect(() => {
+    if (!butterflyRef.current || !lineRef.current) return;
+    if (!lineYScaleRef.current || !lineXScaleRef.current) return;
+    if (!attackData || attackData.length === 0) return;
+
+    const { hL } = lineChartLayout();
+    const yScaleL = lineYScaleRef.current;
+    const xScaleL = lineXScaleRef.current;
+    const gL = d3.select(lineRef.current).select(".line-plot");
+    const gB = d3.select(butterflyRef.current).select(".butterfly-plot");
+
+    if (butterflyThresholdRef.current && butterflyYScaleRef.current) {
+      const group = d3.select(butterflyThresholdRef.current);
+      group.attr(
+        "transform",
+        `translate(0, ${butterflyYScaleRef.current(thresholdValue)})`
+      );
+      setThresholdLabelText(group, isAboveThresholdUnlearn, isModelA);
+    }
+    if (lineThresholdRef.current) {
+      const group = d3.select(lineThresholdRef.current);
+      group.attr("transform", `translate(0, ${yScaleL(thresholdValue)})`);
+      setThresholdLabelText(group, isAboveThresholdUnlearn, isModelA);
+    }
+
+    const aboveY = yScaleL(thresholdValue);
+    gL.select(".clip-above").attr("height", aboveY);
+    gL.select(".clip-below")
+      .attr("y", aboveY)
+      .attr("height", hL - aboveY);
+
+    const aboveOp = isAboveThresholdUnlearn
+      ? CONFIG.OPACITY_ABOVE_THRESHOLD
+      : CONFIG.OPACITY_BELOW_THRESHOLD;
+    const belowOp = isAboveThresholdUnlearn
+      ? CONFIG.OPACITY_BELOW_THRESHOLD
+      : CONFIG.OPACITY_ABOVE_THRESHOLD;
+    gL.selectAll(".line-attack-above, .line-fpr-above, .line-fnr-above").attr(
+      "stroke-opacity",
+      aboveOp
+    );
+    gL.selectAll(".line-attack-below, .line-fpr-below, .line-fnr-below").attr(
+      "stroke-opacity",
+      belowOp
+    );
+
     const strokeOpacity = isAboveThresholdUnlearn
       ? CONFIG.OPACITY_ABOVE_THRESHOLD
       : CONFIG.OPACITY_BELOW_THRESHOLD;
@@ -1283,7 +1442,75 @@ export default function AttackPlot({
       .selectAll(".threshold-line")
       .attr("stroke", CONFIG.BLACK)
       .attr("stroke-opacity", strokeOpacity);
-  }, [isAboveThresholdUnlearn]);
+
+    updateIntersections(gL, attackData, thresholdValue, xScaleL, yScaleL);
+    onUpdateAttackScoreRef.current(
+      updateInfoGroup(
+        gL,
+        attackData,
+        thresholdValue,
+        xScaleL,
+        yScaleL,
+        isMetricEntropy,
+        strategy
+      )
+    );
+
+    if (
+      !gB.empty() &&
+      prevAboveUnlearnForLegend.current !== isAboveThresholdUnlearn
+    ) {
+      paintButterflyLegend(
+        gB,
+        isAboveThresholdUnlearn,
+        isModelA,
+        isLegendVisibleRef.current
+      );
+      prevAboveUnlearnForLegend.current = isAboveThresholdUnlearn;
+    }
+
+    applyCircleOpacities(
+      butterflyRef.current,
+      hoveredIdRef.current,
+      thresholdValue,
+      isAboveThresholdUnlearn,
+      butterflyYScaleRef.current
+    );
+  }, [
+    thresholdValue,
+    isAboveThresholdUnlearn,
+    isMetricEntropy,
+    isModelA,
+    attackData,
+    strategy,
+  ]);
+
+  useEffect(() => {
+    d3.select(butterflyRef.current)
+      .select(".butterfly-legend-group")
+      .style("display", isLegendVisible ? "block" : "none");
+    d3.select(butterflyRef.current)
+      .select(".legend-toggle-button title")
+      .text(isLegendVisible ? "Hide Legend" : "Show Legend");
+    d3.select(butterflyRef.current)
+      .select(".legend-toggle-button")
+      .attr("aria-label", isLegendVisible ? "Hide Legend" : "Show Legend");
+  }, [isLegendVisible]);
+
+  useEffect(() => {
+    d3.select(lineRef.current)
+      .select(".line-legend-group")
+      .style("display", isLineLegendVisible ? "block" : "none");
+    d3.select(lineRef.current)
+      .select(".line-legend-toggle-button title")
+      .text(isLineLegendVisible ? "Hide Legend" : "Show Legend");
+    d3.select(lineRef.current)
+      .select(".line-legend-toggle-button")
+      .attr(
+        "aria-label",
+        isLineLegendVisible ? "Hide Legend" : "Show Legend"
+      );
+  }, [isLineLegendVisible]);
 
   useEffect(() => {
     if (!butterflyThresholdRef.current || !lineThresholdRef.current) return;
@@ -1307,14 +1534,16 @@ export default function AttackPlot({
         const [, pointerY] = d3.pointer(event, container.node());
         const newY = pointerY - dragOffset;
         const newThresholdRaw = butterflyYScaleRef.current!.invert(newY);
-        const newThresholdRounded =
-          Math.round(newThresholdRaw / thresholdStep) * thresholdStep;
+        const step = thresholdStepRef.current;
         const clamped = Math.max(
-          thresholdMin,
-          Math.min(thresholdMax, newThresholdRounded)
+          thresholdMinRef.current,
+          Math.min(
+            thresholdMaxRef.current,
+            Math.round(newThresholdRaw / step) * step
+          )
         );
 
-        onThresholdLineDrag(clamped);
+        onThresholdLineDragRef.current(clamped);
 
         if (butterflyYScaleRef.current && butterflyThresholdRef.current) {
           d3.select(butterflyThresholdRef.current).attr(
@@ -1332,13 +1561,7 @@ export default function AttackPlot({
 
     d3.select(butterflyThresholdRef.current).call(dragHandler);
     d3.select(lineThresholdRef.current).call(dragHandler);
-  }, [
-    isStrategyCustom,
-    onThresholdLineDrag,
-    thresholdMax,
-    thresholdMin,
-    thresholdStep,
-  ]);
+  }, [isStrategyCustom, data, attackData, metric, strategy, modelA, modelB]);
 
   return (
     <div className="flex flex-col items-center">

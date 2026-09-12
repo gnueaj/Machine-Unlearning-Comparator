@@ -5,7 +5,6 @@ import React, {
   useRef,
   useMemo,
   useCallback,
-  useReducer,
 } from "react";
 import { createRoot, Root } from "react-dom/client";
 import { AiOutlineHome } from "react-icons/ai";
@@ -58,6 +57,11 @@ const CONFIG = {
   MISCLASSIFICATION_CIRCLE_OPACITY: 0.85,
 } as const;
 
+const z = d3
+  .scaleOrdinal<number, string>()
+  .domain([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+  .range(d3.schemeTableau10);
+
 interface Props {
   mode: "A" | "B";
   modelType: string;
@@ -69,7 +73,6 @@ interface Props {
     source?: "A" | "B",
     prob?: Prob
   ) => void;
-  hoveredInstance: HoverInstance | null;
 }
 
 const ScatterPlot = forwardRef(
@@ -81,7 +84,6 @@ const ScatterPlot = forwardRef(
       setHighlight,
       data,
       onHover,
-      hoveredInstance,
     }: Props,
     ref
   ) => {
@@ -106,55 +108,6 @@ const ScatterPlot = forwardRef(
       circles: null,
       crosses: null,
     });
-
-    const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
-
-    useEffect(() => {
-      hoveredInstanceRef.current = hoveredInstance;
-    }, [hoveredInstance]);
-
-    useEffect(() => {
-      const refHolder = document.createElement("div");
-      refHolder.setAttribute("data-ref-holder", "true");
-      document.body.appendChild(refHolder);
-
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (
-            mutation.type === "attributes" &&
-            mutation.attributeName === "data-hovered-instance"
-          ) {
-            const newValue = refHolder.getAttribute("data-hovered-instance");
-            if (newValue) {
-              hoveredInstanceRef.current = JSON.parse(newValue);
-              forceUpdate();
-            }
-          }
-        });
-      });
-
-      observer.observe(refHolder, {
-        attributes: true,
-      });
-
-      if (ref) {
-        (ref as any).current = {
-          ...((ref as any).current || {}),
-          updateHoveredInstance: (instance: HoverInstance | null) => {
-            hoveredInstanceRef.current = instance;
-            refHolder.setAttribute(
-              "data-hovered-instance",
-              instance ? JSON.stringify(instance) : ""
-            );
-          },
-        };
-      }
-
-      return () => {
-        observer.disconnect();
-        document.body.removeChild(refHolder);
-      };
-    }, [ref]);
 
     const isModelA = mode === "A";
     const id = isModelA ? modelA : modelB;
@@ -190,43 +143,29 @@ const ScatterPlot = forwardRef(
         .range([CONFIG.HEIGHT, 0]);
     }, [data]);
 
-    const z = useMemo(
-      () =>
-        d3
-          .scaleOrdinal<number, string>()
-          .domain([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-          .range(d3.schemeTableau10),
-      []
-    );
+    const xRef = useRef(x);
+    const yRef = useRef(y);
+    xRef.current = x;
+    yRef.current = y;
 
-    const handleZoom = useCallback(
-      (transform: d3.ZoomTransform) => {
-        if (!svgElements.current.gMain) return;
+    const handleZoom = useCallback((transform: d3.ZoomTransform) => {
+      if (!svgElements.current.gMain) return;
 
-        svgElements.current.gMain.attr("transform", transform.toString());
+      svgElements.current.gMain.attr("transform", transform.toString());
 
-        if (svgElements.current.circles) {
-          svgElements.current.circles.attr("r", CONFIG.DOT_SIZE / transform.k);
-        }
+      if (svgElements.current.circles) {
+        svgElements.current.circles.attr("r", CONFIG.DOT_SIZE / transform.k);
+      }
 
-        if (svgElements.current.crosses) {
-          svgElements.current.crosses.attr("transform", (d) => {
-            const xPos = x(d[4] as number);
-            const yPos = y(d[5] as number);
-            const scale = 1 / transform.k;
-            return `translate(${xPos},${yPos}) scale(${scale}) rotate(45)`;
-          });
-        }
-      },
-      [x, y]
-    );
-
-    const zoom = d3
-      .zoom<SVGSVGElement, undefined>()
-      .scaleExtent([CONFIG.MIN_ZOOM, CONFIG.MAX_ZOOM])
-      .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, undefined>) => {
-        handleZoom(event.transform);
-      });
+      if (svgElements.current.crosses) {
+        svgElements.current.crosses.attr("transform", (d) => {
+          const xPos = xRef.current(d[4] as number);
+          const yPos = yRef.current(d[5] as number);
+          const scale = 1 / transform.k;
+          return `translate(${xPos},${yPos}) scale(${scale}) rotate(45)`;
+        });
+      }
+    }, []);
 
     const resetZoom = () => {
       if (zoomRef.current && svgRef.current) {
@@ -460,8 +399,19 @@ const ScatterPlot = forwardRef(
             .style("stroke-opacity", originalOpacity);
         }
       },
-      [highlight, mode, onHover, shouldLowerOpacity, z]
+      [highlight, mode, onHover, shouldLowerOpacity]
     );
+
+    const handleInstanceClickRef = useRef(handleInstanceClick);
+    const handleMouseEnterRef = useRef(handleMouseEnter);
+    const handleMouseLeaveRef = useRef(handleMouseLeave);
+    const shouldLowerOpacityRef = useRef(shouldLowerOpacity);
+    const highlightRef = useRef(highlight);
+    handleInstanceClickRef.current = handleInstanceClick;
+    handleMouseEnterRef.current = handleMouseEnter;
+    handleMouseLeaveRef.current = handleMouseLeave;
+    shouldLowerOpacityRef.current = shouldLowerOpacity;
+    highlightRef.current = highlight;
 
     const transformedData = useMemo(() => {
       const forgetData = data.filter((d) => d[0] === forgetClass);
@@ -499,6 +449,35 @@ const ScatterPlot = forwardRef(
       };
     }, []);
 
+    const applyHighlight = useCallback(() => {
+      const lower = shouldLowerOpacityRef.current;
+      const currentHighlight = highlightRef.current;
+      const { circles, crosses } = svgElements.current;
+
+      if (circles) {
+        circles
+          .style("fill-opacity", (d) =>
+            lower(d)
+              ? CONFIG.LOWERED_OPACITY
+              : currentHighlight === VIEW_MODES[4].label
+              ? CONFIG.MISCLASSIFICATION_CIRCLE_OPACITY
+              : CONFIG.DEFAULT_CIRCLE_OPACITY
+          )
+          .style("pointer-events", (d) => (lower(d) ? "none" : "auto"));
+      }
+
+      if (crosses) {
+        crosses
+          .style("fill-opacity", (d) =>
+            lower(d) ? CONFIG.LOWERED_OPACITY : CONFIG.DEFAULT_CROSS_OPACITY
+          )
+          .style("stroke-opacity", (d) =>
+            lower(d) ? CONFIG.LOWERED_OPACITY : CONFIG.DEFAULT_CROSS_OPACITY
+          )
+          .style("pointer-events", (d) => (lower(d) ? "none" : "auto"));
+      }
+    }, []);
+
     const updateElements = useCallback(() => {
       if (!svgElements.current.gDot) return;
 
@@ -507,6 +486,9 @@ const ScatterPlot = forwardRef(
       const currentTransform = svgRef.current
         ? d3.zoomTransform(svgRef.current)
         : d3.zoomIdentity;
+
+      const lower = shouldLowerOpacityRef.current;
+      const currentHighlight = highlightRef.current;
 
       svgElements.current.circles = gDot
         .selectAll<SVGCircleElement, (number | Prob)[]>("circle")
@@ -517,17 +499,15 @@ const ScatterPlot = forwardRef(
         .attr("r", CONFIG.DOT_SIZE / currentTransform.k)
         .attr("fill", (d) => z(d[1] as number))
         .style("fill-opacity", (d) =>
-          shouldLowerOpacity(d)
+          lower(d)
             ? CONFIG.LOWERED_OPACITY
-            : highlight === VIEW_MODES[4].label
+            : currentHighlight === VIEW_MODES[4].label
             ? CONFIG.MISCLASSIFICATION_CIRCLE_OPACITY
             : CONFIG.DEFAULT_CIRCLE_OPACITY
         )
         .style("cursor", "pointer")
         .style("vector-effect", "non-scaling-stroke")
-        .style("pointer-events", (d) =>
-          shouldLowerOpacity(d) ? "none" : "auto"
-        )
+        .style("pointer-events", (d) => (lower(d) ? "none" : "auto"))
         .each(function (d) {
           elementMapRef.current.set(d[2] as number, this);
         });
@@ -556,65 +536,38 @@ const ScatterPlot = forwardRef(
         })
         .style("stroke-width", CONFIG.X_STROKE_WIDTH)
         .style("fill-opacity", (d) =>
-          shouldLowerOpacity(d)
-            ? CONFIG.LOWERED_OPACITY
-            : CONFIG.DEFAULT_CROSS_OPACITY
+          lower(d) ? CONFIG.LOWERED_OPACITY : CONFIG.DEFAULT_CROSS_OPACITY
         )
         .style("stroke-opacity", (d) =>
-          shouldLowerOpacity(d)
-            ? CONFIG.LOWERED_OPACITY
-            : CONFIG.DEFAULT_CROSS_OPACITY
+          lower(d) ? CONFIG.LOWERED_OPACITY : CONFIG.DEFAULT_CROSS_OPACITY
         )
         .style("cursor", "pointer")
-        .style("pointer-events", (d) =>
-          shouldLowerOpacity(d) ? "none" : "auto"
-        )
+        .style("pointer-events", (d) => (lower(d) ? "none" : "auto"))
         .each(function (d) {
           elementMapRef.current.set(d[2] as number, this);
         });
 
       if (svgElements.current.circles) {
         svgElements.current.circles
-          .on("click", handleInstanceClick)
-          .on("mouseenter", handleMouseEnter)
-          .on("mouseleave", handleMouseLeave);
+          .on("click", (event, d) => handleInstanceClickRef.current(event, d))
+          .on("mouseenter", (event, d) =>
+            handleMouseEnterRef.current(event, d)
+          )
+          .on("mouseleave", (event) => handleMouseLeaveRef.current(event));
       }
 
       if (svgElements.current.crosses) {
         svgElements.current.crosses
-          .on("click", handleInstanceClick)
-          .on("mouseenter", handleMouseEnter)
-          .on("mouseleave", handleMouseLeave);
+          .on("click", (event, d) => handleInstanceClickRef.current(event, d))
+          .on("mouseenter", (event, d) =>
+            handleMouseEnterRef.current(event, d)
+          )
+          .on("mouseleave", (event) => handleMouseLeaveRef.current(event));
       }
-    }, [
-      handleInstanceClick,
-      handleMouseEnter,
-      handleMouseLeave,
-      shouldLowerOpacity,
-      transformedData.forgetData,
-      transformedData.remainData,
-      highlight,
-      x,
-      y,
-      z,
-    ]);
+    }, [transformedData.forgetData, transformedData.remainData, x, y]);
 
     useEffect(() => {
-      if (!svgRef.current || data.length === 0 || !idExist) {
-        if (svgRef.current) {
-          d3.select(svgRef.current).selectAll("*").remove();
-          svgElements.current = {
-            svg: null,
-            gMain: null,
-            gDot: null,
-            circles: null,
-            crosses: null,
-          };
-        }
-        return;
-      }
-
-      elementMapRef.current.clear();
+      if (!svgRef.current || !idExist) return;
 
       if (!svgElements.current.svg) {
         initializeSvg();
@@ -622,54 +575,62 @@ const ScatterPlot = forwardRef(
 
       const svg = svgElements.current.svg;
       const currentNode = svgRef.current;
+      if (!svg || !currentNode) return;
 
-      if (!svg) return;
+      const zoom = d3
+        .zoom<SVGSVGElement, undefined>()
+        .scaleExtent([CONFIG.MIN_ZOOM, CONFIG.MAX_ZOOM])
+        .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, undefined>) => {
+          handleZoom(event.transform);
+        });
+      zoomRef.current = zoom;
+      svg.call(zoom as any);
       svg.style("cursor", "grab");
 
       const handleMouseDown = () => {
         svg.style("cursor", "grabbing");
       };
-
       const handleMouseUp = () => {
         svg.style("cursor", "grab");
       };
 
-      if (currentNode) {
-        currentNode.addEventListener("mousedown", handleMouseDown);
-        currentNode.addEventListener("mouseup", handleMouseUp, true);
-        window.addEventListener("mouseup", handleMouseUp);
-
-        zoomRef.current = zoom;
-        svg.call(zoom as any);
-      }
-
-      updateElements();
+      currentNode.addEventListener("mousedown", handleMouseDown);
+      currentNode.addEventListener("mouseup", handleMouseUp, true);
+      window.addEventListener("mouseup", handleMouseUp);
 
       return () => {
-        if (currentNode) {
-          currentNode.removeEventListener("mousedown", handleMouseDown);
-          currentNode.removeEventListener("mouseup", handleMouseUp, true);
-          window.removeEventListener("mouseup", handleMouseUp);
-
-          if (svgElements.current.svg) {
-            svgElements.current.svg.on(".zoom", null);
-          }
-        }
-
-        if (svgElements.current.circles) {
-          svgElements.current.circles
-            .on("click", null)
-            .on("mouseenter", null)
-            .on("mouseleave", null);
-        }
-        if (svgElements.current.crosses) {
-          svgElements.current.crosses
-            .on("click", null)
-            .on("mouseenter", null)
-            .on("mouseleave", null);
-        }
+        currentNode.removeEventListener("mousedown", handleMouseDown);
+        currentNode.removeEventListener("mouseup", handleMouseUp, true);
+        window.removeEventListener("mouseup", handleMouseUp);
+        svg.on(".zoom", null);
       };
-    }, [data.length, idExist, initializeSvg, updateElements, zoom]);
+    }, [handleZoom, idExist, initializeSvg]);
+
+    useEffect(() => {
+      if (!svgRef.current) return;
+
+      if (!idExist || data.length === 0) {
+        if (svgElements.current.gDot) {
+          svgElements.current.gDot.selectAll("circle").remove();
+          svgElements.current.gDot.selectAll("path").remove();
+          svgElements.current.circles = null;
+          svgElements.current.crosses = null;
+        }
+        elementMapRef.current.clear();
+        return;
+      }
+
+      if (!svgElements.current.svg) {
+        initializeSvg();
+      }
+
+      elementMapRef.current.clear();
+      updateElements();
+    }, [data, idExist, initializeSvg, updateElements]);
+
+    useEffect(() => {
+      applyHighlight();
+    }, [applyHighlight, highlight]);
 
     useEffect(() => {
       setHighlight("All");

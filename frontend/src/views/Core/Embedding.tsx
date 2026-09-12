@@ -103,7 +103,6 @@ export default function Embeddings({ modelAPoints, modelBPoints }: Props) {
             setHighlight={setHighlight}
             data={modelAPoints}
             onHover={handleHover}
-            hoveredInstance={hoveredInstanceRef.current}
             ref={modelARef}
           />
         )}
@@ -119,7 +118,6 @@ export default function Embeddings({ modelAPoints, modelBPoints }: Props) {
             setHighlight={setHighlight}
             data={modelBPoints}
             onHover={handleHover}
-            hoveredInstance={hoveredInstanceRef.current}
             ref={modelBRef}
           />
         )}
