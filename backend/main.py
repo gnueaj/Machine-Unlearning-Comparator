@@ -1,3 +1,7 @@
+# macOS GUI backend requires the main thread; Agg lets worker threads generate plots.
+import matplotlib
+matplotlib.use("Agg")
+
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
